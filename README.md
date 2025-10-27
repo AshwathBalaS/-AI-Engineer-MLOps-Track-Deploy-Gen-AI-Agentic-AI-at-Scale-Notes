@@ -115,6 +115,22 @@ This Repository contains my Udemy course notes of "AI in Production: Gen AI and 
 
 **X) Day 4 - Testing Production AI Deployments and Terraform Cleanup Workflows**
 
+**Y) Day 5 - Automating AI Infrastructure Deployments with GitHub Actions CI/CD**
+
+**Z) Day 5 - Setting Up Git and GitHub Actions for AI Production Deployments**
+
+**AA) Day 5 - Setting Up GitHub Actions for Automated AI Model Deployment**
+
+**AB) Day 5 - Setting Up GitHub Actions for Automated AI Infrastructure Deployment**
+
+**AC) Day 5 - Setting Up GitHub Actions for Automated AI Agent Deployments**
+
+**AD) Day 5 - Live CI/CD Pipeline Deploy: From Git Push to Production AI Agent**
+
+**AE) Day 5 - Automated CI/CD Pipelines for Production AI Apps with Git Deploy**
+
+**AF) Day 5 - Resource Management and Cost Control for Production AI Systems**
+
 # **A) Day 1 - Instant AI Deployment: Your First Production App on Vercel in Minutes**
 
 This is a big moment. This is the start of the juiciest course I've ever made. Welcome to the beginning of generative AI and Agentic AI in production, week one, day one. The next four weeks are about taking AI and putting it into production, making it production grade.
@@ -1835,3 +1851,187 @@ After all three destroy scripts run successfully, Terraform indicates that the e
 This concludes day four of week two. Optional sections provide additional insights on workspaces, testing, and troubleshooting. Returning to the slides, we can reflect on the architecture diagram and appreciate that Terraform provisioned all the resources seen there three times over—for dev, test, and prod. We also verified by checking three simultaneous conversations and observing resources appear and disappear in the console.
 
 With that, day four wraps up. You now have Terraform in your toolkit and can confidently create, manage, and destroy AWS environments. This marks roughly 45% of the way through the course. Tomorrow, we move on to GitHub Actions, which will allow us to trigger deployments automatically on git push, running everything—including Terraform—on demand. Terraform is now part of your skillset, and you are officially a Terraform practitioner. Congratulations!
+
+# **Y) Day 5 - Automating AI Infrastructure Deployments with GitHub Actions CI/CD**
+
+Today is a fitting conclusion to a huge week. Today is the day that we add icing to the cake. We are going to put GitHub Actions in the mix—a way for us to automatically deploy when we do a git push, amongst other things. That really wraps up this week of core platform engineering with an AI lens on top of it, to build an AI application and be able to automatically build environments and push them out.
+
+To launch straight in, let’s start with a quick recap of what we learned about Terraform. The best way to give you a refresher on Terraform is to go through the six key terms we learned about, starting with the provider. You remember when we had the Terraform script that began with “provider” and an open curly brace—this is where you describe the plugins you want to use for this Terraform configuration, which might be related to AWS, GCP, Azure, or whatever.
+
+Then we have variables, which are the parameters that configure your deployment. Remember the .tf files? There was a terraform.tfvars file that contained the general, default variables used, and then we had another one called prod. The place where that was selected was in the deploy script. If you look at the deploy script, you’ll see that if it’s deploying to production, it provides this alternate variables file. That’s how we switched in different variables for different environments.
+
+Next are resources—the absolutely key ingredient. Resources are defined one by one, followed by curly braces, and they describe each of the services we want to set up in AWS—the S3 bucket, each of the Lambda functions, and so on. They are all described there as resources with attributes that configure them, and Terraform takes care of all the business.
+
+Then comes state. This is where Terraform records its version of reality. These state files need to match what’s really going on, and they are usually private Terraform files stored in your project directory. They typically don’t get checked into source control because they represent Terraform’s internal understanding of the deployed infrastructure.
+
+Outputs are where you list the results that come from doing a Terraform deploy. These could include things like your CloudFront URL or distribution URL. When we ran the deploy script, Terraform was executed, and then we collected the outputs to determine details like which S3 bucket holds the frontend, what the CloudFront distribution URL is, and what the API Gateway endpoint is. Those outputs were used to connect the different parts of our application together properly.
+
+Finally, the last key Terraform term we learned is workspace. A workspace allows you to set a completely different namespace for everything—it enables you to have all of your state replicated in different “universes.” We used this concept to create different environments—development, test, and production—called dev, test, and prod. You can call them whatever you like. The deploy script was what brought it all together. If in doubt, look through that deploy script again—you’ll see the Terraform commands that were run. We didn’t run Terraform commands ourselves very often, but if we did, the main ones would be terraform init, terraform apply, and terraform destroy. It’s pretty common to wrap those up in a deploy script so everything runs smoothly from one place.
+
+That’s the quick refresher on Terraform. Now, it’s my great pleasure to introduce the final topic and area of expertise for this week: GitHub Actions. GitHub Actions is all about automating deployments using tooling built directly into GitHub. While it’s mostly used for automated deployments and CI/CD (continuous integration and continuous deployment), you can do much more with it.
+
+There are three main terms to understand here. The first is actions. GitHub Actions is like a platform within GitHub—it even has its own tab on the main navigation bar. It allows you to run scripts automatically or in response to user actions, such as pressing a button. In fact, there’s almost literally a button you can push to kick off a script.
+
+Next is workflows. A workflow is a series of steps that are triggered by some event. These workflows are configured using YAML files (which you’re probably familiar with), and they’re stored in a special directory: .github/workflows in the project root. Anything placed in that directory represents a workflow.
+
+The final term is jobs. A job represents something that happens during execution time when a workflow is running. A job is a series of steps that get carried out on a virtual machine in GitHub’s cloud infrastructure. This VM is called a runner, and it executes the steps in your job whenever a workflow is triggered.
+
+It’s also worth noting that GitHub Actions can be used for much more than CI/CD. For example, they can automatically generate documentation when you push code, analyze your repository, generate API docs, or even perform AI-powered code reviews. You can hook up all sorts of processes using GitHub Actions. While CI/CD is its most common use case, the platform’s flexibility allows for a wide range of automation.
+
+Also, remember that GitHub Actions isn’t the only CI/CD platform out there. Jenkins, for example, is the original (“OG”) CI/CD tool—very comprehensive, robust, and huge, with a learning curve to match. GitHub Actions, on the other hand, is lightweight, simple, and already integrated into GitHub, making it much quicker to get started. That’s why it’s perfect for what we’re doing today.
+
+Now, I wouldn’t be doing my job if I didn’t show you one more time our deployment architecture. You probably know it well by now—it’s no longer confusing like it was the first time you saw it. It should now be completely clear that we have Lambda at the center of our architecture. We’re using serverless functions, so this is a serverless architecture. Lambda hosts our business logic, which is triggered each time a user sends a chat message. The /chat endpoint connects to an S3 bucket that contains our conversation history, stored as JSON objects for each browser session (UUID).
+
+We’ve also got an API Gateway set up, exposing this functionality. We integrated the gateway with our Lambda function and configured those routes. Initially, we did all of that manually through the AWS Console, but later we moved everything into Terraform code so it could be automatically deployed.
+
+We also have a frontend static site hosted in another S3 bucket, distributed globally via CloudFront. When a user opens the app in the browser, the CloudFront URL serves the static site. Inside that frontend, the JavaScript fetch command is configured to call our API Gateway endpoint—this linkage was automatically handled by our deploy script.
+
+So, when the user sends a chat, it triggers the API Gateway, which invokes the Lambda function. Our Lambda function contains the business logic that connects to Amazon Bedrock to run a large language model. We specifically chose Amazon’s Nova Foundation Model to stay fully AWS-native this week. The model processes the chat input, returns the response, stores it in the conversation history, and sends it back to the user interface.
+
+Everything works together seamlessly. After the hands-on process of building this manually in the AWS console, we transitioned to Terraform, where we described the entire infrastructure in code. Then, with our deploy script running terraform init and terraform apply—and switching workspaces for dev, test, or prod—the whole infrastructure could be built automatically, end to end.
+
+# **Z) Day 5 - Setting Up Git and GitHub Actions for AI Production Deployments**
+
+And now here we are, back in Casa again for the last time this week. We are in the twin repo. You’re going to miss this repo—it’s not yet a real repo; it’s still just a directory, a “cursed project.” But very shortly, it’s going to become a true repository. Open up that week two folder and go to day five. If you don’t have this folder, you might be working in the production repo instead. Open a preview of this and let’s get started.
+
+Welcome to the final day of week two. Today, we’re implementing the complete DevOps lifecycle. Now we’re going to be putting things into Git and GitHub. Step one is about destroying the environment—destroying dev, test, and prod. We’ve already done that, but if you haven’t, now would be a good time. We want to destroy all the environments to make sure we’re starting from a completely clean slate. If you’re unsure whether you have a clean slate, open the AWS Console—yes, we may dislike it now, but go in anyway—and double-check that you have no Lambda functions, no API Gateways, no APIs, no CloudFront distributions, and no S3 buckets. If all of that’s gone, you’re good to go.
+
+It also suggests that you can optionally delete the Terraform workspaces, though we won’t be working locally today. Once again, verify your clean slate to be certain everything is cleared out.
+
+Now we’ll create a .gitignore file. We actually already made one earlier, but this will be the final version. So open it up and paste in the final contents. This version defines all the standard things we want to ignore. In my final version, I’ve decided not to include any Terraform state files. These are pretty standard ignores: we exclude build artifacts like the Lambda deployment zip and package, and we obviously don’t want to include the local conversation history. That would just clutter things up.
+
+Make sure we also exclude environment variable files—remember I mentioned earlier that we’d have an environment variable file to check in? That’s where this comes in. We’ll create one called .env.example, which is a best practice that gives anyone who clones your repo a template for setting up their own environment variables. We’ll also exclude standard front-end files such as node_modules and output directories, along with typical Python excludes like virtual environments, IDE configuration files, and any AWS-specific files. That gives us a clean and sensible .gitignore — a solid first step toward creating our repository.
+
+And yes, to clarify, that’s exactly what we’re doing right now — creating an official GitHub repository. Up until now, this has just been a local project; we’ve never actually pushed it to GitHub. But since we’ll soon be setting up GitHub Actions, we need it to exist as a true repo on GitHub.
+
+The next step, as a nice best practice, is to create an .env.example file. This will tell others how to set up their own .env file. Just create a new file called .env.example, paste in the example contents, and save it. Thanks to our .gitignore configuration—which ignores all .env.* files except .env.example—this file will indeed be included in the repository.
+
+Now, there’s a tiny hitch we need to fix. When we first set up the front end of this platform, we used the create-next-app command. By default, create-next-app automatically creates a Git repository for you. That means our frontend folder is already a Git repo. As a result, within our parent twin folder, we now have a repo inside a repo—a sub-repo. If we were to create a new repo at the twin level, this nested repo would cause all sorts of confusion.
+
+To fix that, we’ll remove the fact that the front end has its own Git repository. The back end folder shouldn’t be a repo either—unless you accidentally ran uv init instead of uv init --bare earlier. To be safe, we’ll run a command that removes any existing .git directories from both the frontend and backend folders.
+
+There are commands for both Mac and PowerShell to do this. We’ll use those now just to ensure there are no sub-repos. And if you’re not entirely following what this means, don’t worry too much—just run the command carefully. The important thing to note is that it uses rm -rf, and any time you see that command, all your Spidey senses should be tingling.
+
+rm -rf is one of the most dangerous commands you can run in a terminal. It means “delete this folder and all of its contents recursively, without asking for confirmation.” There are countless horror stories online about developers bringing down entire systems due to careless use of rm -rf. So double-check that what comes after it is correct. In our case, it should be frontend/.git and backend/.git — and nothing else. Make sure you’re inside the twin directory when you run it. I will not be held responsible if someone accidentally runs rm -rf at the root of their drive and wipes out everything!
+
+If you’d prefer a safer option, you could use a file explorer to manually delete the hidden .git folders in the frontend and backend directories (they’re hidden by default). But the command line method is the simplest and fastest. Once you’ve done that, you’re clear of sub-repos, and the drama is over.
+
+Now it’s time to actually create our Git repository. Run the command:
+git init -b main
+This initializes a new Git repository in your current directory and creates a .git folder. The -b main flag sets the default branch name to main, which is the modern standard (older versions used master). You’ll see confirmation that an empty Git repo was initialized in your current directory.
+
+In most terminal environments, like Cursor, you’ll also notice the colors change — dark gray files are those ignored by Git, and blue files are new or modified files that need to be staged. That’s a good sign — it means Git is tracking the project correctly.
+
+Next, we’ll do some basic Git configuration. Run the following commands:
+git config user.name "<your name>"
+and
+git config user.email "<your email>".
+In my case, I used my regular Gmail address. This information is used to associate commits with your identity.
+
+Now we have a local Git repository successfully set up. At this point, you can use git status anytime to check what’s going on. You’ll see that you’re on the main branch, with no commits yet, and that many files are untracked (shown in red).
+
+To stage them for commit, use:
+git add .
+This adds all changes to the staging area. I’m not going to give a full Git tutorial here, but if you’re curious to learn more, there’s an amazing online Git guide by BJ, who writes incredibly insightful and witty programming books. His Git guide is especially good — if you read it all, you’ll know far more about Git than most people.
+
+Once staged, commit your files using:
+git commit -m "Initial commit"
+This records your first commit with a message. After that, running git status again should show a clean state — everything is committed, and you’re ready to move forward.
+
+Now we’re ready for the next big step: creating our actual GitHub repository and pushing this local project to the cloud. Let’s go and do that.
+
+# **AA) Day 5 - Setting Up GitHub Actions for Automated AI Model Deployment**
+
+I’m now on GitHub.com, and if you’re following along, make sure that you’re logged into your own account rather than simply staying on the GitHub home page. If you don’t already have a GitHub account, you’ll need to create one before continuing. Once you’re logged in, you should see your own profile with your username at the top. Personally, I tend to do most of my work on Saturdays — not exactly the healthiest habit, but that’s when I find the most time outside of my day job — so you’ll often see my GitHub activity light up over the weekend.
+
+From your profile, go to the Repositories section. You’ll likely already have one or more existing repositories there. In my case, I can see my production repository, which you may already be familiar with. Now, click the “New” button to create a new repository. When prompted for a name, I recommend calling it twin, since that name is available and fits our purpose nicely. For the description, type something like “A digital twin version of me” or “An AI digital twin version of me.”
+
+Next, you’ll need to set the visibility for the repository. You can choose between public and private. The visibility setting here only determines whether the code is viewable to others — it doesn’t relate to whether your actual AI twin will be public or private later. I suggest setting it to public so that you can showcase your work, especially because this project will eventually include more functionality that you’ll want to share or demonstrate. However, I’m going to make mine private for now.
+
+At this stage, you’ll see some checkboxes for initializing the repository with a README, a .gitignore, or a license file. Make sure all of those options are turned off. The reason is that we already have these files in our local folder from earlier work. If you allow GitHub to create them again here, you’ll end up with unnecessary merge conflicts and other issues when you try to push your code. Once everything looks right, click Create Repository.
+
+You’ll now see your newly created repository page, which will be empty for the moment. GitHub conveniently provides some command-line instructions for linking your local project to this new remote repository. We’ve already done most of the groundwork, so we’re in good shape. Copy the two commands that GitHub shows — you’ll use them next in your terminal.
+
+Back in your command line, we’ll first connect the local repository to the one we just created on GitHub. To do this, type or paste the following command:
+
+git remote add origin https://github.com/<your-username>/twin.git
+
+(Replace <your-username> with your actual GitHub username.) You might notice that there are different URL formats available — HTTPS is the most common one, and that’s what we’ll use. After pressing Enter, the connection will be established.
+
+Next, push your local content to GitHub with:
+
+git push -u origin main
+
+This command uploads your entire local codebase to your GitHub repository. Once it finishes, return to GitHub in your browser and refresh the page. You should now see your project structure fully visible — folders like backend, frontend, scripts, and terraform, as well as files such as .env.example and .gitignore. The upload has worked perfectly.
+
+You can click into each folder to verify the files. Inside backend, for instance, you’ll find your Python code and deployment scripts (but not your local zip files or package folders, since those aren’t tracked). Inside scripts, you’ll see your automation scripts for deploying the Terraform environment and spinning up the cloud infrastructure. You’ll also notice the Terraform configuration files themselves safely stored under version control. Everything looks as expected, which means we’ve successfully pushed our project to GitHub.
+
+That brings us to the next part — and this one’s a little more complex. It involves setting up our Terraform backend so that GitHub Actions can run our infrastructure automation remotely. Remember that when we run Terraform locally on our computers, it maintains a record of the existing infrastructure in something called the Terraform state file, usually stored in a .tfstate file within a folder. This state file helps Terraform understand what’s already deployed so it can plan updates intelligently.
+
+However, once we move Terraform execution to GitHub Actions, Terraform will be running in the cloud — not on our local machine. That means GitHub needs somewhere to store this state file permanently so that every time it runs, it knows the current state of the infrastructure. In other words, GitHub requires a kind of shared drive or remote storage area for Terraform’s state.
+
+The most common and convenient solution is to use AWS S3 as that shared storage. An S3 bucket can easily store the Terraform state file, and it’s a standard practice across the industry. Additionally, we’ll create a DynamoDB table in AWS. This table acts as a locking mechanism, ensuring that if multiple Terraform processes run at once, they don’t interfere with each other.
+
+So instead of manually creating an S3 bucket and DynamoDB table from the AWS console, we’ll use Terraform itself to define and deploy them — because, after all, Terraform is made for creating cloud infrastructure. The only twist is that we’ll be using Terraform locally this one last time to set up these shared resources that GitHub Actions will later rely on.
+
+To do this, create a temporary Terraform file — for example, call it backend-setup.tf — inside your Terraform directory. Think of this as a short-term configuration used only for bootstrapping. Inside this file, you’ll define the resources for the S3 bucket and DynamoDB table that will handle Terraform’s state and lock management. You might name the bucket something like twin-terraform-state and the DynamoDB table something like terraform-locks.
+
+Once that file is ready, open your terminal again and make sure you’re in the terraform directory. Run the following commands in order:
+
+terraform workspace select default  
+terraform init  
+terraform apply
+
+When running terraform apply, we’ll specify the exact resources to create so that Terraform only applies this temporary configuration. Terraform will prompt you to type “yes” to confirm that you want to proceed, which you should do. It will then create both the S3 bucket and DynamoDB table on AWS.
+
+When the process completes, you can check what was created by typing:
+
+terraform output
+
+This command will print the output values, showing you the names of the newly created resources — typically, something like state_bucket_name = twin-terraform-state and dynamo_db_table_name = terraform-locks. These two resources will serve as the backend for storing and locking Terraform state when we later run Terraform inside GitHub Actions.
+
+Now that these backend components exist, we no longer need the temporary file we created. Go ahead and delete backend-setup.tf from your Terraform folder. It was only needed once to set up the shared infrastructure. After deleting it, your Terraform directory will be clean again.
+
+At this point, everything is in place. You’ve created a GitHub repository, pushed your project to it, and provisioned an S3 bucket and DynamoDB table that will allow GitHub Actions to store Terraform state remotely. The next step is to update your Terraform configuration so that it uses this new backend and to configure your GitHub Actions workflow so it can authenticate with AWS and run Terraform commands seamlessly in the cloud.
+
+# **AB) Day 5 - Setting Up GitHub Actions for Automated AI Infrastructure Deployment**
+
+Within the scripts folder, under the deployment files, there’s a line that runs the terraform init command — this is the line that sets up the Terraform state. We need to update this part of the script. To do that, I copy the new terraform init command from the guide, which replaces the old one, and then I’ll explain what it does. Even though you may not directly run this script yourself, you should still make the same change to keep your repository consistent.
+
+So, open the deployment script and look for the line that runs terraform init. You’ll find that it navigates into the Terraform directory and then executes the command. Once you locate that line, paste in the updated version of the command. This new terraform init line includes extra configuration options that tell Terraform to use the special S3 bucket and DynamoDB table that we previously set up for storing the state and lock files. Essentially, this command configures Terraform to know about the shared backend infrastructure that we created specifically for this purpose.
+
+After making that update, we also need to do the same for the PowerShell version of the deployment script to keep everything aligned. If you’re working on macOS, you technically don’t need to modify the PowerShell version, but you can still do it if you’d like to keep your repository fully complete and consistent. Open the PowerShell deploy script — be careful not to confuse it with the destroy script — and again find the terraform init command. Replace it with the updated command, save the file, and that part is done.
+
+Next, we’ll make similar updates to the destroy scripts, since they also initialize Terraform before tearing down infrastructure. In this case, we’re replacing the entire script rather than just one line. Copy the complete new destroy script from the guide and paste it into the destroy.sh file, replacing everything. Save the file, and then repeat the process for the Windows PowerShell version. Scroll down in the guide to find the PowerShell script version for destroy, copy all of it, paste it into your destroy.ps1 file, and save again. Once done, you’ll see the changes clearly reflected in your files — everything now points to the new shared backend resources for Terraform state.
+
+Now that the deployment and destroy scripts have been updated to reference the shared drives (the S3 bucket and DynamoDB table) where the Terraform state lives, it’s time to go back to GitHub. The next task is to set up how GitHub will access AWS. This step is part of the larger process of giving GitHub Actions permission to interact with your AWS infrastructure. Working with cloud providers always involves permissions and roles, and AWS manages these using IAM (Identity and Access Management).
+
+If GitHub Actions is going to deploy and manage infrastructure using Terraform, it must have the correct IAM permissions to do so. This means we need to create an IAM role that GitHub Actions can assume when running Terraform. Normally, you could go into the AWS Management Console and set all of this up manually, but instead of clicking through multiple configuration screens, we can once again use a temporary Terraform file to automate this setup. This saves a lot of effort and ensures everything is consistent.
+
+This temporary Terraform file will define the IAM role, the policies, and the OpenID Connect (OIDC) trust relationship that allows GitHub Actions to authenticate securely with AWS. The file will contain all of the permissions GitHub Actions needs — for example, permissions to manage S3, DynamoDB, Lambda, and other resources required by your project. We don’t need to dive too deeply into what each of these IAM policies does; the important part is that this Terraform configuration will create the right role and attach the appropriate policies.
+
+So, go to your Terraform directory and create a new temporary file, something like github-oidc.tf, which reflects the fact that we’re setting up OIDC-based authentication between GitHub and AWS. Paste in the Terraform configuration that defines the IAM role, its policies, and the trust relationship. Once you’ve added the configuration, go back to the guide to confirm you’ve copied everything correctly. Now it’s time to apply it.
+
+Open your terminal, navigate to your terraform directory (don’t forget this step), and make sure you’re in the default workspace, not a dev, test, or prod workspace. Before running any apply commands, first check whether you already have the necessary OIDC provider and IAM role set up. You can do this with a quick command that queries your AWS environment. In my case, since I’ve run this before, I already have the provider configured — you might not, especially if this is your first time setting things up. If you see an ARN (Amazon Resource Name) appear in your output, that means the provider already exists.
+
+If you already have an existing provider, you’ll need to import it into Terraform so Terraform knows about it. To do that, first retrieve your AWS account ID — you can use a simple command to echo it or find it in your AWS console. Once you have the account ID, you can run the Terraform import command. This command will be commented out in the guide since you should only use it if the provider already exists. When you run it, you’ll need to specify your GitHub repository in the format owner/repo, for example ashwathbala/twin. After running the import, Terraform will successfully recognize the existing resource, and you’ll be ready to proceed.
+
+If, however, you don’t have the provider yet (which is the most likely case for new setups), you can skip the import and directly apply the Terraform configuration. The guide provides two versions of the command — one for Mac/Linux and another for Windows. In either case, make sure to replace the placeholder text with your GitHub username and your repository name (for example, ashwathbala/twin) before running it. Once you run the terraform apply command, Terraform will execute and set up everything required: the IAM role, its attached policies, and the OIDC provider that allows GitHub Actions to authenticate with AWS.
+
+If you already had the provider imported, you’ll run a slightly different terraform apply command that skips the creation of that specific resource but applies everything else. Either way, once the apply process starts, Terraform will ask you to type “yes” to confirm that you want to proceed. After confirming, Terraform will create or update the necessary AWS resources.
+
+When the process completes successfully, GitHub will now have the IAM role and associated permissions it needs to perform infrastructure operations through Terraform. To confirm that everything has worked correctly, you can run the following command:
+
+terraform output
+
+This command will display output values, including the ARN of the new IAM role that GitHub Actions can assume when deploying infrastructure. Make sure to save or copy this ARN — you’ll need it shortly when configuring your GitHub Actions workflow. You can copy it to your clipboard or note it down somewhere safe.
+
+Finally, once you’ve verified that everything is working and have recorded the ARN, you can delete the temporary Terraform file (github-oidc.tf) that you just created. Like the previous temporary setup files, this one was only needed to provision the IAM resources. Move it to the trash to keep your Terraform directory clean. Keep the ARN and any related outputs noted somewhere secure, as they’ll be required when you continue setting up GitHub Actions to connect to AWS.
+
+# **AC) Day 5 - Setting Up GitHub Actions for Automated AI Agent Deployments**
+
+# **AD) Day 5 - Live CI/CD Pipeline Deploy: From Git Push to Production AI Agent**
+
+# **AE) Day 5 - Automated CI/CD Pipelines for Production AI Apps with Git Deploy**
+
+# **AF) Day 5 - Resource Management and Cost Control for Production AI Systems**
