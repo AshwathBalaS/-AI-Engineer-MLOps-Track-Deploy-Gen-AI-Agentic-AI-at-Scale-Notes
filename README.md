@@ -131,6 +131,22 @@ This Repository contains my Udemy course notes of "AI in Production: Gen AI and 
 
 **AF) Day 5 - Resource Management and Cost Control for Production AI Systems**
 
+**III) Week 3**
+
+**A) Day 1 - Multi-Cloud AI Deployment: Azure, GCP & Cybersecurity Agent Setup**
+
+**B) Day 1 - Building AI Security Agents with MCP Servers and Semgrep Integration**
+
+**C) Day 1 - Containerizing AI Agents with Docker for Cloud Deployment**
+
+**D) Day 1 - Setting Up Azure Infrastructure for Production AI Container Deployment**
+
+**E) Day 1 - Deploying AI Apps to Azure with Terraform Infrastructure as Code**
+
+**F) Day 1 - Deploying AI Agents with MCP Servers to Azure Container Apps**
+
+
+
 # **A) Day 1 - Instant AI Deployment: Your First Production App on Vercel in Minutes**
 
 This is a big moment. This is the start of the juiciest course I've ever made. Welcome to the beginning of generative AI and Agentic AI in production, week one, day one. The next four weeks are about taking AI and putting it into production, making it production grade.
@@ -2167,3 +2183,135 @@ Do everything back to front so that the digital twin that you have deployed to p
 And with that, congratulations on getting to halfway to completing and surviving week two. What a week! Congratulations on that. Now, my editor would kill me if I didn’t just mention the fact that if you have a moment to go in and rate this course on Udemy, it makes an enormous difference. That’s one of the main ways Udemy decides whether or not to show this course to other people. And it’s so big—to build a community around the course and getting people hearing about it is the biggest part of the challenge. So rating the course makes a massive difference, and I’d be super, super grateful. So, yes, please.
 
 And with that, that does finally bring us to the wrap-up for week two. This is where we are—look at all those filled-in boxes. It’s been an enormous week. Going forwards, we will only use Terraform—no more clicking around consoles for us. Next week I’ve got GCP, I’ve got Azure, I’ve got SageMaker, more AI. We’ve got some vectors and we’ve got MCP. There’s so much to look forward to. It’s a lot more AI-ish next week, you’ll be pleased to hear. Core Platform Engineering—you’re now an expert. It’s time for more AI. It’s time for week three. I’ll see you then.
+
+# **III) Week 3**
+
+# **A) Day 1 - Multi-Cloud AI Deployment: Azure, GCP & Cybersecurity Agent Setup**
+
+Well, you survived week two, and I am now delighted to welcome you to week three. Week three is something that I might describe as a smorgasbord. Do you know what a smorgasbord is? This here is a smorgasbord, and I describe week three as a smorgasbord for two reasons. One of them is that it consists of a wide range — a selection of different things to entertain you — a selection of sweet and savory items. And the other reason is that it is something of a taste of several different things. We're not going to go as deep or as substantive in any one, but rather give you some exposure across the board.
+
+To demonstrate that, let me show you what I have in store for you this week. We're going to start by looking at Microsoft Azure, and then we'll move on to Google Cloud Platform. We’re not going to go nearly as deep as we did with AWS, but it's important as AI engineers looking to deliver AI solutions to production that you have some exposure to these other platforms. And we’ll throw MCP into the mix just to make it a bit more AI-ish. Then for the next three days, we're going very AI — we’ll look at Amazon SageMaker, then move on to using vectors, ingesting data with vectors, and then data pipes with an agent and MCP. So, a lot of purple, a lot of AI topics to look forward to. I’ve got a great week ahead for you.
+
+So, today and tomorrow we're going to be doing a project which is going to have something for everyone. It’s going to tick a lot of boxes. It’s going to be mostly a yellow day — or rather, yellow two days — in that we're going to be looking at cloud platform engineering first and foremost. We’ll be rapidly looking at Azure and GCP, more quickly than AWS. We'll be using Terraform to deploy so that we don’t have to go through lots of screens and consoles, although we will look at them. We’re going to be using workspaces — we used Terraform workspaces last week to separate the development, test, and production environments, which is very common — and this time we’re going to use them cunningly to have the same project deployed to Azure and GCP in two different workspaces. Very convenient. We’ll just have one environment for each and keep it simple.
+
+We’re not going to use GitHub Actions because you already got the idea last week. If that’s something you’re really into, you can absolutely do this as part of this project too — so you can just do a git push while the rest of us are envious. That’s in your skill set now anyway. That’s the main focus — it’s yellow. But we’ve also got some blue — we are going to build a juicy project. We’re going to build something called the Cyber Security Analyst, a little project that’s able to take a file of code and check it for vulnerabilities. It’s going to be a Next.js front end again, using the App Router. We’re going to use a FastAPI backend, of course, and it’s going to be packaged by Terraform. We’ll use Docker again, having a Docker container with both the front end and back end in it, much like we did for the healthcare app in week one.
+
+But there’s also a bit of purple in the next two days. We’re going to be doing some AI work as well, but this time we’re not going to be using the OpenAI Python client library — we’ll be using the OpenAI Agents SDK that people from my course are already very familiar with, and we’ll be using an MCP server. We’ll use an MCP server to equip our agent with cybersecurity skills. That’s going to be great. So, there’s some agentic AI — there’s a lot that we’re going to be doing in the next two days, and it really ticks all the boxes. It’s mostly yellow, but there’s plenty of blue and purple in the mix to keep you entertained.
+
+All right, so prepare yourself for an important moment. In this course, we’re going to compare the different cloud services across the three big providers: AWS, Azure, and GCP. And these, you’ll remember, are the five different archetypes — the five different types of deployment architecture we mentioned last week: a traditional server, Infrastructure as a Service (like Amazon EC2), Platform as a Service, Container as a Service, Container Orchestration, and then Serverless Function.
+
+If we start by talking about AWS, let me quiz you now — I want you to say out loud, using that famous Udemy technology that listens to what you say — what is each of the AWS components for these different things? What’s the AWS component for server — the one we didn’t actually use, but I talked about a few times? It’s perhaps the original of the Amazon components: of course, EC2. What is the platform component? So this would be like Vercel — a PaaS. Amazon has one too. We didn’t use it ourselves, but I mentioned it. It’s not as well-known as the others, but Beanstalk is their product for that.
+
+The container — now, this one you should know because we used it in week one — the container as a service. You package a Docker container and off it goes. This is what we used for the healthcare SaaS app, and this is of course App Runner. Now, container orchestration — we didn’t use that. You can be forgiven for not knowing this, but if you do know it, congratulations. It is of course ECS or EKS (the K for Kubernetes rather than container). And last but not least — definitely not least — the one that’s the talk of the town: the AWS function, which is of course AWS Lambda. That’s the AWS roster.
+
+Now we’re going to compare it with the other providers. Starting then with Azure, I’ll show them all together so you can compare them one-on-one. The equivalent of EC2 is Virtual Machines — a very down-to-earth name, less to remember. Generally, Azure’s naming is nice — and GCP’s too, actually — it’s pretty clear what’s going on. The platform, the PaaS, is called App Service. The container one, the one in the middle, is called Azure Container Apps, also known as ACA. The container orchestration one for building and deploying large, scalable, orchestrated products is called Azure Kubernetes Service. And the one equivalent to Lambda is called Azure Functions. Pretty easy to remember.
+
+And GCP also doesn’t have fancy names. The server one on the left is called Google Compute Engine — sometimes abbreviated GCE. The next one along is called Google App Engine, which makes sense — compute or app — similar to Azure App Service. The one for running containers is called Cloud Run. The next one is called Google Kubernetes Engine — often abbreviated GKE — and the equivalent of Lambda or Azure Functions is called Google Cloud Functions. People generally say Cloud Functions or Cloud Run; I don’t often hear acronyms for those.
+
+So that’s the full landscape of AWS, Azure, and GCP. And when I say “full landscape,” it’s far from full — all three providers have a monstrous slew of different services, names, and components. We’ll see a few others with AWS as we go — like SQS and others — but these are the big five in each of the three providers. You don’t necessarily need to memorize them; you can always look them up. But it’s good to have heard them, and we’ll have some hands-on experience coming up.
+
+So for the next two days, we’ll be working with Azure and GCP. You might be wondering which components we’ll work with — the answer is the ones in the middle: Azure Container Apps and Google Cloud Run. You probably guessed that already from my introduction earlier. We’ll make a container — a Docker container — and then deploy it to Azure and GCP. Typically, building a container and deploying it is the simplest use case. It’s what we used in week one with the healthcare app when we put it on App Runner — it’s the simplest to package and deploy.
+
+I wanted to give you a quick example with these other two, and it’s also the one that, once you’ve done it once, feels most consistent across providers. Another good reason to pick this. Typically, it’s what I recommend people start with first — if you’ve got an Agentic app you’re looking to deploy and wondering how to go about it, what’s the simplest way? Put it in a Docker container, make sure it works locally, and then deploy that container to the cloud using App Runner, ACA, or Cloud Run. They’re pretty similar across the three and tend to “just work,” with that little Apple Silicon caveat that can catch you off guard if you don’t build the Docker container properly. As long as you do that, it should work beautifully — and that’s the beauty of Docker containers.
+
+So that’s what I have in store for you now. There’s no time to waste — we’re diving straight into the lab. I’ve gone back to the production repo, the repo we began in, and you should too. Open it up — there’s a week-three folder on the left. Open the preview of the single file inside it — the README — and this gives us our first instructions. Quite simply, we’re going to move to a different repo — we’re going to move to a repo called Cyber Git, one of my repos. You could also just go to my GitHub page and find “cyber.”
+
+In previous weeks, we’ve always built a new repo from scratch and copied and pasted into it. This time, we’re going to take a preexisting repo, because this week is all about productionizing. So I’m going to give you prebuilt projects that I’ll talk through, and together we’ll deploy them to production. So please bring up a terminal window. When that terminal comes up, it’s typically in the production directory (the directory for this project), and we don’t want to be there — we want to be in the parent directory, one up. We want to be looking at all of your projects — your projects’ directory or similar. It’s in there that we’ll type this git clone command exactly as shown, to clone this repo into our projects directory.
+
+Copy that, paste it, and run that command to clone the repo. Then once you’ve done that, in Cursor you can go to the File menu and do “New Window.” It pops up like this — you then want to open a project, choose “Open Project,” go into your projects folder, find “cyber,” and open it. Up comes “cyber.” You’ll see I was already in there, so it was already open. And we are now in the cyber repo. Let’s get rid of the terminal so you can see it nice, clean, and fresh. This is going to be our playground for the next couple of days. And let’s get started now with building the Cyber project.
+
+# **B) Day 1 - Building AI Security Agents with MCP Servers and Semgrep Integration**
+
+So here we are in the cyber project. You can see it's got a very simple directory structure: backend, frontend, terraform, and then week three, which is of course our documentation for the week — our guides, which has day one and day two, where only this project “cyber” is just for days one and two. Day one has three parts, and day two has two parts. Day one is going to be a little bit longer than day two. Day two will go faster. We’ve got a fair bit to do, so let’s start by opening the preview of what I’m calling part zero, because it’s kind of getting ourselves up and running with some basics that will apply for both Azure and GCP.
+
+Okay, so day one part zero: getting started with this project. We’re going to build an AI-powered web application that analyzes some Python code for security vulnerabilities. The first step — the section “Setting up the project” — just tells you to do exactly what we already did. It’d be a bit meta if we somehow hadn’t done this and we were in this section. But it goes without saying — we’ve done this, we’ve opened it, we’ve inspected these four directories. We’re already on section two.
+
+We’re going to be using an agent that is equipped to handle cybersecurity analysis, and we’re going to be doing this by using a tool called Semgrep, which is a very well-known tool for analyzing code for security vulnerabilities. Semgrep has an API and it’s free. That is what we’re going to do right now — set up a Semgrep account. Setting up these accounts and APIs is something that one has to do a million times, so hopefully you’ll bear with it this time as we quickly set up this account so that we can use that MCP server, which is going to be a lot of fun.
+
+So let’s do that right now. The first thing to do is go to semgrep.dev. Click there — up it comes: “Meet your new AI AppSec engineer.” We’ll say “Accept all cookies” right there. Then there’s a “Try it for free” button, and that’s the place to go to set this up. I’m already logged in, so it’s already come in, but the first thing that it does is it asks you if you’d like to sign up with GitHub, and I suggest that you do that because it makes it nice and simple. You obviously have a GitHub account already, so go ahead and do that. That seems super slick to me.
+
+Then you come down here and go to Settings, and from Settings you can then go to Tokens. In Tokens, this is where you can create a new token. The only thing to bear in mind when you create a new token is to make sure you check both — leave the first one checked, but also check the Web API as well. And this is a token which I am not going to create here since I’d just be exposing it to the internet — that’s not safe and you should never do that. But I do have some valid tokens that I’ve created and tested, and this should work great. Keep note of that key because we’re just about to put it in our .env file.
+
+In fact, we can do it right now. Go back in here, create a .env file by right-clicking, and into that .env file, this gives you the instructions to do just what I was saying. You should then, in your .env file, right-click → new file, and then put two keys:
+OPENAI_API_KEY — put your OpenAI key,
+and SEMGREP_APP_TOKEN — spelled exactly like that (you can’t be a letter wrong), and then paste in your Semgrep API token that you just created. By this point, you get it — you know about these API keys, you know they have to be perfect. So do that, and then you should be in great shape. It’s in the .gitignore, so you’ll see that it will go dark gray like this, which indicates it’s not going to get accidentally checked into Git.
+
+Nice — onwards. Now we’re going to run the app locally to test it. Before we do, I want to point out this file here — this Python module airline.py. If I open this right now, it’s a piece of Python code which is going to do a little airline chatbot assistant that I believe I cover in my LLM engineering course at some point. There’s some code in here, and you might want, if you wish, to take a moment to review this code in airline.py and see if you can spot a few potential cybersecurity no-nos — or even just things that might make you pause for thought. Because this is the challenge — this page here, this code — this is the challenge that we are going to give our AI to analyze and see.
+
+Have a browse through it, and as a little self-test, put the video on pause and see if you can find a few things that would certainly cause you to raise your eyebrows. Okay, and then with that, come back here again for us to give this a try.
+
+Now let’s bring up a new terminal window, and we’re just going to check that we have Node. Obviously, you have Node. You’ve got to this point — I have version 24. And check that you’ve got… well, obviously you’ve got it, otherwise you wouldn’t be here. But if not, there’s how to install it if you need it.
+
+So the way that this is organized is very logical. The backend is a nice backend that you’ll be pleased to see follows all of our principles. It’s a uv project. It’s got a server.py. The server.py is a FastAPI server, and that FastAPI server has the CORS nonsense in it, and then it has a bit of Pydantic classes set up — people from the course will be very familiar with this stuff.
+
+It uses OpenAI’s Agents SDK — we’re not going to cover that on this course, but the docs are beautifully written, and you can look it up yourself if you’re not already familiar with it from my other courses. But we create an agent called the Security Researcher — that’s the name of it. We give it some instructions. We’re going to use gpt-4.1-mini, and we have an MCP server that we’re providing called Semgrep server. The output type (this is structured outputs) is going to be a Security Report.
+
+The Security Report — defined right here — has an executive summary and a list of identified issues. Those issues include a title, description, code fix, CVSS score (a score from 0 to 10), and a severity level: critical, high, medium, or low.
+
+So here it is — we have some code to create the agent. We have run_security_analyst, and this uses OpenAI’s traces. It then does the async with — using a context manager to start our MCP server. It creates an agent, calls runner.run, and then returns the output as a security report. That gets returned by the FastAPI route we’re using right here. We also have a good old health check (as we should), and we have some test code in here — I might remove that before checking it in; some of it’s extra stuff.
+
+At the bottom, once again, just as we did in week one, we have this server responsible for serving up the static website as well. We’re going to have a Next.js frontend, and this is going to return the static website. So this is all in server.py.
+
+You can see I’ve done something that I like to do — I’ve separated out a module for context in context.py. Remember we did this in week two as well. This has the prompts for the security researcher and some information to build those prompts.
+
+We have our MCP servers in a separate Python module as well. There’s only one MCP server — here it is. The parameters: we get the Semgrep app token from the .env file. These are the MCP parameters. If you’re not sure about MCP, you could check out my course if you wish, or just go along with the flow and come back to it later.
+
+This is where we create the MCP server with those parameters, with a two-minute timeout, and we use something called the static tool filter. This is a recent feature added to the OpenAI Agents SDK, which allows you to constrain which tools get used when — rather than giving access to all of the different MCP tools, we’re only giving it access to one of them. Semgrep comes with a lot, but we’re only going to give it one called semgrep_scan. So that’s all it can do.
+
+I appreciate that I’m not coding it or having you copy and paste, because this week is about deploying this in practice. The super interesting thing is how you go about deploying an agent that can spawn an MCP server. You can do that with Lambda and with serverless functions, but it’s really hard because serverless functions are not designed to spawn separate processes — that’s not really how they’re used; they’re meant to just be a function. So you have to jump through some hoops to get that to work. But it’s an ideal use case for using containers — because absolutely, a Docker container is the “box within the box.” Anything can happen within that box as long as it’s defined properly. And that’s why, if you’ve got an agent that’s going to spawn MCP servers, the simplest way to start is to use container apps, which is exactly what we’re going to do.
+
+# **C) Day 1 - Containerizing AI Agents with Docker for Cloud Deployment**
+
+And that was looking at the back end. Let’s just take a moment to look at the front end. The front end is a Next.js app, of course, and it’s a Next.js app with all of the folders you should be familiar with. This time, when I created it, I used the src (source) option so that it created the app folder using the app router. So, we’re looking for an app folder, not a pages folder, and that’s within a source directory here. It’s just a small change from what we did before last time — those files and directories were immediately within the front-end folder, but now they’re under a source directory. Otherwise, it’s very, very similar to what we did before — the same kind of configuration. Everything is already set up for you; it’s a nice, very simple app.
+
+It’s got the same layout and pages; pages is where the action happens. You can look through it if you want. It’s using a few installed components and should just give us this very simple user interface for our Cybersecurity Researcher.
+
+Okay, back to the instructions. We are now going to open a terminal, and in the terminal we’re going to go into the backend directory. Here we go — and we are going to run uv run server.py. That’s going to run our Python server. There it goes, listening on port 8000. No Docker containers, nothing like that — this is simply a Python server. I’m going to show you how it works without any container magic first.
+
+Now we’re going to deploy our front end. Let’s open a new terminal — here it is. We go into the frontend folder, run npm install. This won’t do anything for me, but for you, it should install a bunch of packages that you haven’t installed yet. Then npm run dev is how we start the front end. There we go — there is the front end.
+
+Now one little thing to watch out for here: you need to launch the front end with this URL — localhost, not the other one — just because of some cleverness about how the front end and back end are hooked up together. You can read more about it in the guide if you wish, but take my word for it, this is the one to open up.
+
+So I click here — up it comes. And here we are looking at our Cyber Security Analyst. You’ll notice this has got a nice, fresh user interface — it’s quite clean and pleasant. I’d like to pretend that I did this UI myself, but I did not — I asked Claude Code, and Claude Code did a fabulous job. I did need to iterate a couple of times; it takes work to get to a good outcome, but the final result is terrific. There’s no way I have the taste to pull off a UI like this.
+
+Anyway, I press Open Python File, choose airline.py, and press Open. The contents of that file appear right here. The Analyze Code button becomes enabled, and I can press that. This now launches my agent using the OpenAI Agents SDK. That then launches my MCP server to connect to Semgrep. It only gives one tool available to the OpenAI Agents SDK — to GPT-4.1-mini — and launches that tool to connect to Semgrep, run an analysis on this file, and return the results in structured outputs. Those should appear in a presentable format any second now.
+
+And here it is — here are the results of our analysis. It analyzed 2,237 characters of Python code. Semgrep found four issues, and the agent identified one additional issue because, in the prompt, I gave it the opportunity to add something extra.
+
+Let’s look through what it found and see if it matches what you found. The first one, which was indeed the bad one, is a SQL Injection vulnerability, a classic. I imagine you spotted that — there was something executing a SQL cursor that just shoved in the values directly, meaning someone could input malicious SQL in the city field. They could put "London" and then close quotes and insert dangerous code, wreaking havoc. That was a definite problem.
+
+There was, I think, an even worse one: something that evaluated an expression allowing arbitrary code execution — that’s the really critical one. Semgrep spotted it easily, and it has a criticality score of 9.8 (CVSS). Then there were lower-priority ones — a potential Denial of Service issue because of the way Gradio was launched without restriction, among others. You may have a slightly different set of issues, since the ones the language model adds might vary, but the point is the same:
+
+When we’re running locally, we just have a web server with a front end, a Python backend, and the backend spawns an MCP server as a separate process. That’s how local deployments work.
+
+Now we want to package this up. So close both servers — the front end and back end — by pressing Ctrl+C in each terminal. They’ll both stop. When you stop the backend server, you’ll see a trace of the Semgrep server showing what it was doing on your machine, proving it was actually running.
+
+But we’re going to move on and look at Docker.
+
+If I show you the top directory, we have a Dockerfile. Let’s open that. Here it is. The Dockerfile looks similar to the one from Week 1 with the Healthcare App — it creates two images. The first is a Node image, used to build the front-end package. By this point, you probably understand this better than before — it runs npm run build on the frontend to produce the static output.
+
+Then it creates a Python container — installs UV, sets everything up, and then performs this key line: it copies the built frontend app from the first container into the Python container. That’s where it adds a health check, exposes port 8000, and runs Uvicorn to start the server. That’s how it all comes together — that’s our Dockerfile.
+
+Now, with that ready, we can build it. Open a new terminal. Run docker --version to check Docker is installed, then docker ps to check it’s running. If it fails, open Docker Desktop manually from your Applications folder.
+
+Now we build our Docker container — technically, we’re building the image (people often mix those up). My build is quick since I’ve done it before; yours may take 2–5 minutes. It downloads base images, installs dependencies, builds the frontend, and packages it all together.
+
+Next, we run the container — this step turns the image into a live container. The --rm flag means once we stop it, it’s deleted automatically. It uses our .env file, runs the image, and brings up the container on port 8000.
+
+So, to be clear, this is now a Docker container running locally — we’ve done no deployment yet, just ensuring the project works locally. It’s running on port 8000. Open it up — and here it comes. It looks exactly the same as when we ran the frontend and backend separately, except now it’s inside a Docker box.
+
+If you’re paying close attention, we’re not actually running a separate frontend anymore — we compiled it into a static website, and now the FastAPI backend serves that static site.
+
+Once more, open airline.py, press Analyze Code, and now our Docker container runs the same analysis — just within this encapsulated environment.
+
+And here are the results. It says Semgrep found four issues again, and I identified two additional issues (last time it was one). That’s normal; the model can vary slightly each run. It identified one more low-priority issue — a detailed error message disclosure, which I intentionally left in as a trivial example.
+
+Anyway, the point here isn’t the cybersecurity analysis itself, though it’s a fun, realistic project — it’s about demonstrating that the entire solution now runs packaged inside a Docker container on your local machine.
+
+If you were only going to run it locally, Docker wouldn’t add much compared to running frontend and backend separately. But the real advantage is that once it’s containerized, it becomes super easy to deploy to the cloud — and that’s exactly what we’re going to do next, with Azure.
+
+# **D) Day 1 - Setting Up Azure Infrastructure for Production AI Container Deployment**
+
+# **E) Day 1 - Deploying AI Apps to Azure with Terraform Infrastructure as Code**
+
+# **F) Day 1 - Deploying AI Agents with MCP Servers to Azure Container Apps**
