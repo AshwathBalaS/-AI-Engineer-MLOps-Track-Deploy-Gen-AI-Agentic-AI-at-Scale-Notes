@@ -1,5 +1,6 @@
 # AI-in-Production-Gen-AI-and-Agentic-AI-at-Scale-Notes
-This Repository contains my Udemy course notes of "AI in Production: Gen AI and Agentic AI at Scale" by Ed Donner
+This Repository contains my Udemy course notes of "
+AI Engineer MLOps Track: Deploy Gen AI & Agentic AI at Scale (Older Name - AI in Production: Gen AI and Agentic AI at Scale)" by Ed Donner
 
 **Table of Contents:**
 
