@@ -2313,6 +2313,68 @@ If you were only going to run it locally, Docker wouldn’t add much compared to
 
 # **D) Day 1 - Setting Up Azure Infrastructure for Production AI Container Deployment**
 
+And this is showing our Docker container running. You'll see a few things here, such as the grep results analysis and the ongoing health checks. To stop the container, I press Control + C, which stops it from running and deletes it. That concludes part zero—the foundation and groundwork for having a working app running in a container locally.
+
+Now, let’s move on to Day One, Part One: Azure. The first step is to set up an Azure account, assuming you don’t already have one. If you do, you can skip this section. To create an account, click the link to launch Azure and follow the signup process. You’ll need to provide a credit card for verification and a phone number.
+
+If this is your first time, you should receive a free credit—for me, it was $200 valid for 30 days. Offers may vary depending on your region. Students may qualify for Azure for Students, which provides additional credits. Once your account is set up, you’ll access the Azure portal, which is where you manage your resources.
+
+Before diving into the portal, it’s helpful to understand some basic Azure concepts. At the top level, you have your account. Under your account, you have subscriptions, such as Azure for Students or Azure Free Trial, which define the billing boundary. Under each subscription, you create resource groups, which logically organize your resources. In this tutorial, we will create a resource group called Cyber Analyzer RG. Finally, under the resource group, you have individual resources, like container apps, that you will deploy.
+
+Once in the portal (portal.azure.com), confirm your email if prompted. You’ll land on the dashboard, which shows your credit balance, available services, and a search bar. Azure uses a passwordless login flow linked to your email.
+
+Next, we’ll set up cost management. Even though we’re using the free tier, it’s important to set budget alerts to monitor spending. Start by searching for Cost Management in the portal, then go to Budgets. Click Add to create a budget. Give it a unique name (e.g., Monthly Budget Two), set the reset period to monthly, and choose a budget amount—for example, $10 per month.
+
+You can configure alert thresholds—for instance, email alerts at 50% and 100% of your budget. You can also get alerts when the forecasted spend reaches 100%. Make sure you enter your email correctly, as this is a key line of defense to prevent overspending. Press Create to finalize the budget setup. This ensures you have monitoring in place, though it’s still your responsibility to check costs regularly.
+
+With cost management in place, we now create our first resource group. Go to the portal menu (hamburger menu), select Resource Groups, and click Create. Choose a name, like Cyber Analyzer RG, and select the region closest to you. This ensures all resources in the group are in the same location. After creation, your resource group will appear in the list, empty and ready for resources.
+
+Next, we need to install the Azure CLI, similar to how we installed the AWS CLI. On a Mac, you can use Homebrew, or you can download the installer. Windows users have a similar installation option. Once installed, open a terminal and check the version with az --version. For example, I have version 2.76.0.
+
+To log in, type az login. This opens a browser for authentication. Once authenticated, you can verify your subscription and resource groups. For example, running az account list --output table shows your subscriptions, and az group list shows your resource groups, like Cyber Analyzer RG.
+
+At this point, we have successfully set up Azure, including cost management, a subscription, and a resource group. This setup is a bit simpler than AWS and should be ready in just a few minutes. With this foundation, we are now ready to deploy our app on Azure Container Apps, which is the next step in the tutorial.
+
 # **E) Day 1 - Deploying AI Apps to Azure with Terraform Infrastructure as Code**
 
+Back in the week three folder, we’re now in Day One, Part Two—the home stretch and the last part for today. We begin with a quick check to see if Terraform is installed. Open a terminal and type terraform version. If Terraform is not installed, you should download it first.
+
+Next, we set the environment variables in the shell so they load from the .env file. There are versions for Mac/Linux and Windows. I’ve loaded both the OpenAI key and the Semgroup app token into my shell. You can use echo to confirm that they are set correctly.
+
+We then navigate into the Azure directory within Terraform using cd Terraform. Before diving in, it’s worth exploring the Terraform directory. It contains subdirectories for Azure and GCP, along with some .gitignore files for internal Terraform state. Inside the Azure directory, there’s a main.tf file and other Terraform configuration files.
+
+Opening the Terraform script, you’ll see it sets up providers and resources like the Azure Container Registry, which is similar in concept to AWS Elastic Container Registry. This script also uses Terraform to run Docker commands, eliminating the need for a separate script. A key line ensures the Docker image is built for the correct target platform, which is especially important for Mac users but good practice for all platforms.
+
+The script also sets up log analytics, a container app environment, and finally the Azure Container App. Outputs are included directly in the same file, such as the app URL, ACR login server, and resource group. Variables include the project name, location, resource group, OpenAI key, Semgroup app token, and Docker image tag. I encourage you to review the script, explore documentation, and ensure you understand what each part does.
+
+After this, we cd into the Azure directory, then initialize Terraform with terraform init. This should give a success message. Next, we select the Terraform workspace using terraform workspace select Azure. You should create a new workspace if this is your first time, but I’m selecting one I’ve used before. Running terraform workspace show confirms that we’re in the Azure workspace.
+
+We then log in to the Azure CLI using az login. If you aren’t logged in, this will open a web page for authentication. After logging in, you may need to select a subscription. Most people have just one, so select the number corresponding to your subscription. Running az account show --output table confirms your subscription details.
+
+A brief note on resource providers: In Azure, you enable services as resource providers, which is somewhat analogous to AWS IAM permissions. You need to register the resource providers you intend to use. For example, to create container apps, you must register the Microsoft.App provider, and for log analytics, the corresponding provider. Registration is a one-time setup per subscription, and you only pay when you actually use the resources.
+
+To register providers, run az provider register --namespace Microsoft.App and the equivalent for log analytics. The first time this takes a minute or two, but subsequent times it registers immediately. Once registered, your subscription is ready to create the necessary resources.
+
+Next, we use terraform plan to preview what will be created when we run terraform apply. This step is optional but useful for understanding the impact. We pass in the OpenAI key and Semgroup app token as variables, which we set earlier from the environment. Running terraform plan lists resources such as the container app environment, container registry, log analytics, and the Docker image that will be created.
+
+Finally, we run terraform apply to create the resources. Terraform will display the plan and prompt for confirmation—type yes to proceed. Resources are now being created. While you could do all of this manually through the Azure console (which is a good practice for learning), Terraform automates the process efficiently. The creation typically takes a minute or two, depending on the resources being provisioned.
+
 # **F) Day 1 - Deploying AI Agents with MCP Servers to Azure Container Apps**
+
+And welcome to the other side! The Terraform apply has completed, and our Azure Container App has been successfully deployed. Here is its URL—clicking it opens up the Cyber Security Analyst app. It looks familiar, but the main difference this time is the URL, which now points to Azure Container Apps.
+
+Next, we open the Python file airline.py and press Analyze Code. This is running entirely on the cloud. The container is now spawning an MCP server, running the Semgroup MCP container over standard IO within the container. This server connects to Semgroup using our token, runs an analysis on the code, and brings back results. The agent uses these results to produce its analysis and may add its own insights as well. After a short wait, we see the Semgrep scan results, with issues identified—success!
+
+We can compare this to running the app locally: one instance running on our local machine as a front-end/back-end, one in a Docker container locally, and now one deployed on Azure. All are running the MCP server and performing Semgroup analysis, which confirms the deployment was successful.
+
+Next, we check the Azure portal to see what has been created. Navigating to Resource Groups and selecting our only resource group, Cyber Analyzer, we can see the newly created Azure resources: the Cyber Analyzer app itself, the Container App, the Container App environment, and the Azure Container Registry. The portal allows us to explore logs, activity, and monitoring, but for simplicity, we use Log Stream under monitoring. Selecting historical logs, we can view the log messages from our container app, including the MCP server running Semgroup and returning results to the agent. This gives real-time insight into the app’s operation.
+
+Observability is also integrated via the OpenAI Agents SDK using traces. This framework allows us to monitor activity whether the app is running locally or on Azure. In traces, we can see the Semgroup scan being executed, the input to the MCP server, and the resulting output used by our agent. This combination of container logs and the traces framework provides a deep view of the workflow, demonstrating how observability meets cloud deployment.
+
+It’s also important to keep an eye on Azure costs. In the portal, navigate to Cost Management and then Budgets to see progress towards any budget limits you set earlier. Using Cost Analysis, you can view detailed reporting, such as accumulated costs, daily costs, and subscription usage. For example, daily costs may show something like $0.17/day, which is typically covered by the free credits on a new Azure account. Monitoring costs ensures you stay within your intended budget.
+
+Finally, we bring the environment down. In the same terminal where environment variables are loaded and the Azure workspace is selected, we run terraform destroy. Confirming with yes, Terraform begins to tear down all resources. This process can take several minutes (around 8–9 minutes in my case). Returning to the Azure portal, the Cyber Analyzer resource group is now completely empty, confirming that all resources were destroyed and no costs will accrue.
+
+And that wraps Day One of Week Three! We accomplished a lot: we built or explored a cybersecurity app, ran it locally, ran it in a Docker container, and deployed it to Azure using Terraform. We saw the MCP server in action, examined logs and observability traces, and confirmed our costs and environment teardown.
+
+Congratulations—you are now over halfway through the journey, around 55% complete, on your way to production-level expertise. Tomorrow, we move on to Google Cloud Platform!
