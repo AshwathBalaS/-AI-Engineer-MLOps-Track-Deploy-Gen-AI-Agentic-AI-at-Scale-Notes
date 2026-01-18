@@ -146,6 +146,14 @@ AI Engineer MLOps Track: Deploy Gen AI & Agentic AI at Scale (Older Name - AI in
 
 **F) Day 1 - Deploying AI Agents with MCP Servers to Azure Container Apps**
 
+**G) Day 2 - Setting Up GCP Infrastructure for Production AI Agent Deployment**
+
+**H) Day 2 - Setting Up Google Cloud CLI for Production AI Container Deployment**
+
+**I) Day 2 - Deploying AI Agents to GCP Cloud Run with Terraform Infrastructure**
+
+**J) Day 2 - Deploying AI Agents Across GCP and Azure with Container Services**
+
 
 
 # **A) Day 1 - Instant AI Deployment: Your First Production App on Vercel in Minutes**
@@ -2378,3 +2386,448 @@ Finally, we bring the environment down. In the same terminal where environment v
 And that wraps Day One of Week Three! We accomplished a lot: we built or explored a cybersecurity app, ran it locally, ran it in a Docker container, and deployed it to Azure using Terraform. We saw the MCP server in action, examined logs and observability traces, and confirmed our costs and environment teardown.
 
 Congratulations—you are now over halfway through the journey, around 55% complete, on your way to production-level expertise. Tomorrow, we move on to Google Cloud Platform!
+
+# **G) Day 2 - Setting Up GCP Infrastructure for Production AI Agent Deployment**
+
+A fabulous welcome to Week Three, Day Two, which is a continuation of Week Three, Day One, before we change topics. This session builds directly on what we covered yesterday.
+
+This time, however, we are focusing on GCP — Google Cloud Platform. We’ll be doing the same cyber-security project deployment as before, but this time deploying it on GCP with its own MCP server. Hopefully—famous last words—it’s going to be a quicker day than yesterday, because we’ve already done all the groundwork earlier this week.
+
+Since we already have a container built and running locally, today should mainly be a matter of deploying it to the cloud.
+
+Just to recap, this is Day Two of a two-day block. There’s something here for everyone. From a cloud engineering perspective, today is all about GCP deployment. We are not using GitHub Actions, but you could absolutely add that as an optional extension if you want.
+
+We’ll continue using the Cyber Analyst project that we worked on yesterday, which you should now be very familiar with. On the AI side, we’re again using the OpenAI Agents SDK, and we’ll be running an MCP server for the cyber skills. Just like yesterday, we’ll also take a look at the observability framework traces, so we can monitor agent activity once it’s running in production.
+
+Alright—let’s get to it.
+
+As usual, we’ll start with a quick refresher on cloud service models. You’ll remember the five major types:
+
+Traditional server infrastructure
+
+Infrastructure as a Service (IaaS)
+
+Platform as a Service (PaaS)
+
+Containers and container orchestration
+
+Serverless
+
+On AWS, those map roughly to EC2, Elastic Beanstalk, App Runner, ECS or EKS, and Lambda.
+
+You’re now also somewhat familiar with Azure, since we worked with Azure Container Apps (ACA). Azure’s equivalents include Virtual Machines, App Service, AKS, and Azure Functions.
+
+So what does this look like in GCP land?
+
+The server-side offering is GCE — Google Compute Engine
+
+The platform service is Google App Engine
+
+The container service is Google Cloud Run
+
+Container orchestration is GKE — Google Kubernetes Engine
+
+Serverless functions are Cloud Functions
+
+As you probably remember well, what we’re doing today is focused on container deployment, which is often the simplest way to get started. Containers work particularly well when you’re using MCP servers, because they can be spawned directly inside the container.
+
+They’re also ideal for quick deployments: once your container is running locally, deployment should just be a matter of running Terraform apply to push it out to the cloud.
+
+With that overview complete, let’s head back to Cursor and start talking GCP.
+
+Here we are again in the Cyber repository inside Cursor. Hopefully, you already have it cloned and open. We’re going to expand the Week Three folder and then move into Day Two, Part One.
+
+There are only two parts today:
+
+Setting up GCP
+
+Running the deployment
+
+We’ll follow a very similar process to what we did with Azure. First, we need to set up a GCP account if you don’t already have one. Google typically offers a free trial, which you can access by going to cloud.google.com.
+
+When you visit the site, you’ll see information about the free tier, which currently includes $300 of free credit. Hopefully, you’ll get the same offer. Click Start Free, and you’ll be guided through the sign-up process.
+
+This does include entering a credit card, but Google will clearly inform you that you won’t be charged unless you exceed the free limits.
+
+When I personally signed up, I ran into a bit of friction because I already had an existing Google Workspace account for email. That caused a few extra hoops, and I had to lean on an LLM to help me through it. That’s likely a rare edge case, though. For most of you, the sign-up process should be straightforward.
+
+Once you’re done, you’ll land on the Google Cloud Console, which lives at:
+
+console.cloud.google.com
+
+That’s where we’ll do all our work.
+
+Before diving into the console, it’s worth understanding GCP’s resource hierarchy, because it’s slightly more complex than Azure’s and can be confusing at first.
+
+At the top level, you have your Google Account—this is your Gmail or Google Workspace identity. Under that, you may have an Organization, which typically exists if you’re part of a company.
+
+Next comes the Billing Account, which represents your payment method. Under the billing account, you create Projects, and inside those projects live all your resources.
+
+Conceptually, a Project in GCP is similar to a Resource Group in Azure, and a Billing Account is somewhat similar to an Azure Subscription.
+
+Now let’s create a project.
+
+In the Google Cloud Console, use the project selector at the top of the screen and click New Project. Give it the name Cyber Analyzer, leave the organization and location as default, and click Create.
+
+I won’t recreate it here since I already have one, but that’s how I got to this point.
+
+Next, we need to associate billing with the project.
+
+With the Cyber Analyzer project selected, open the hamburger menu on the left and navigate to Billing. This is where you link your project to a billing account.
+
+If this is your first project, you should already have a billing account created during sign-up—typically called something like Free Trial Account. The console will prompt you to associate it with the project.
+
+Once linked, you should see your billing account listed, showing your $300 free trial credit. In my case, I still see plenty of zeros, which is exactly what I like to see. It also shows how many days are remaining on the free trial.
+
+Now let’s set up budgets and alerts, which is something you should absolutely do.
+
+From the Billing section, go to Budgets & alerts. You’ll likely see nothing there initially. Click Create Budget and give it a name—something like Monthly Budget. The exact name doesn’t matter.
+
+Set the time range to monthly and apply it to all projects and all services.
+
+Next, set a specified amount—we’ll use $10 for safety. This doesn’t limit spending; it just controls alerts.
+
+Now configure the alert thresholds.
+
+Set alerts at:
+
+50% of actual spend
+
+90% of actual spend
+
+100% of actual spend
+
+Also add a forecast-based alert at 100% of forecasted spend.
+
+Choose to send email notifications to billing admins and users, then click Finish to create the budget.
+
+Finally, double-check everything.
+
+Under Account Management in the Billing section, you should see your projects—including Cyber Analyzer—associated with the billing account. On the right, verify that your email address is listed as the billing administrator.
+
+You can edit this if needed to ensure alerts go to the correct place.
+
+From here on, you should regularly visit the Billing Overview page to keep an eye on costs. As long as your budgets and alerts are set up, you’ll be notified well before anything unexpected happens.
+
+# **H) Day 2 - Setting Up Google Cloud CLI for Production AI Container Deployment**
+
+We’re now going to install the Google Cloud CLI (command-line interface), just as we did earlier for Azure and AWS.
+
+Google provides installation instructions for Windows, macOS, and Linux, and the process is fairly standard. You should be able to follow the official installer steps for your operating system without much trouble. Once the CLI is installed, open a new terminal window so we can initialize it.
+
+In that terminal, run the following command:
+
+gcloud init
+
+When you run this command, you’ll see a welcome message explaining that the tool will guide you through the process of installing and configuring gcloud.
+
+You may be asked whether you want to reinitialize the current configuration. In this case, go ahead and say yes. It’s perfectly fine to reinitialize, especially if you’ve used gcloud before or want to ensure everything is clean and correctly set up.
+
+Next, you’ll be prompted to select an account.
+
+You may see a couple of existing accounts listed, but in practice, the easiest option is usually “Sign in with a Google account.” Selecting this option opens your browser, allowing you to authenticate using your normal Google credentials.
+
+This approach avoids manual token handling and makes the process much smoother. Enter your password in the browser, complete the login, and return to the terminal once authentication is complete.
+
+After pressing Next and clicking Allow, your account will be authenticated successfully.
+
+Once authentication is complete, the CLI will prompt you to pick a cloud project to use.
+
+From the list of available projects, select Cyber Analyzer. This ensures that all future gcloud commands run against the correct project by default.
+
+At this point, gcloud init is complete. You are now logged in, authenticated, and working inside the Cyber Analyzer project context. If you’re prompted to select a default region, simply follow the instructions and confirm the suggested option.
+
+Now let’s run through a few basic but important CLI commands to confirm that everything is working as expected.
+
+First, we’ll check the current configuration. This command shows which account, project, and region are currently active.
+
+You should see:
+
+Your Google account listed correctly
+
+The Cyber Analyzer project selected
+
+A default region such as us-central1
+
+If all of that looks correct, you’re in good shape.
+
+Next, let’s list all available projects associated with your account.
+
+This command will display every project you have access to. You may see some older or experimental projects if you’ve used GCP before, but what matters is that Cyber Analyzer appears in the list.
+
+Seeing it there confirms that the project exists and is accessible.
+
+We’ll then check which project is currently active.
+
+This command should return only Cyber Analyzer, confirming that it is indeed set as the default project for all subsequent operations. If that’s what you see, everything is configured correctly.
+
+Next, we’ll run a command to inspect enabled APIs and services.
+
+This allows us to confirm that the platform services required by our application are available. You should see a list of enabled services, which indicates that API access is working correctly.
+
+Now we’ll explicitly enable the specific APIs we’ll need for this project.
+
+These include:
+
+Cloud Run, which allows us to run containerized applications
+
+Container Registry / Artifact services, which store container images
+
+Cloud Build, which enables us to build containers in the cloud
+
+These services should sound familiar if you’ve worked with containers on Azure or AWS. Enabling them ensures that GCP can build, store, and run our containerized cyber-security application.
+
+Once this command completes successfully, all required APIs are enabled.
+
+At this point, your Google Cloud account is fully set up, the CLI is configured, the correct project is selected, and all required services are enabled.
+
+We’re now ready to move forward with the next step: building and deploying our container on GCP.
+
+# **I) Day 2 - Deploying AI Agents to GCP Cloud Run with Terraform Infrastructure**
+
+Welcome to Week Three, Day Two, Part Two, in the cyber repository. This is the stage where we actually take everything we’ve prepared and build the Docker container and deploy it to Google Cloud.
+
+I’m going to open the preview for Day Two, Part Two, which covers the deployment process. Thanks to the magic of Terraform, this part should be relatively straightforward. Most of the hard work has already been done earlier in the week.
+
+We’ll begin by opening a new terminal window. The first thing we’ll do is confirm that Terraform is in good working order. I’m confident it is, since we’ve just used it recently, but it’s always good to start clean and deliberate.
+
+Next, we’ll retrieve the list of projects from gcloud. This helps us verify exactly which project we’re about to deploy into and avoids any accidental deployments to the wrong environment.
+
+In our case, the project we care about is Cyber Analyzer.
+
+It’s important to pause here and clarify an important GCP concept: project name versus project ID.
+
+The project name is free-form text and is mostly for human readability. The project ID, however, must be globally unique and is the value that actually matters for deployments and Terraform configuration.
+
+We’ll be using the project ID cyber-analyzer, which is probably what yours is called as well. If your project ID is slightly different, that’s completely fine — just make sure you use your exact project ID, character for character. There’s no room for error here.
+
+The first command we’ll run loads the contents of the .env file and exports them as environment variables.
+
+It’s important to note that you must be in the project root directory when you run this command. The example shown is for macOS, and there’s a Windows equivalent provided in the next cell.
+
+In addition to loading environment variables, we’re also going to set a Terraform-specific variable called TF_VAR_project_id. This is how we tell Terraform which GCP project it should operate against.
+
+We’ll set this value to cyber-analyzer, copying it exactly, letter for letter. Terraform and GCP are extremely strict about project IDs, so precision matters.
+
+Once this is done, the Terraform project ID variable is set. You can run verification commands to confirm that the variables are loaded, and while I’m confident they are, you should definitely run those checks—especially on Windows.
+
+Next, we navigate into the Terraform directory, and then into the GCP subdirectory.
+
+Previously, when deploying to Azure, we worked inside the Azure subfolder. This time, we’re very much in GCP land.
+
+Inside the Terraform directory, you should see exactly two subdirectories: Azure and GCP. If you see any leftover files from earlier experiments, you can safely delete them. When everything is clean, seeing only these two directories is exactly what we want.
+
+Now we initialize Terraform by running terraform init. This sets up providers and prepares the working directory for execution.
+
+Next, we need to make sure we’re using the correct Terraform workspace. We’ll be working in a workspace called GCP.
+
+If you haven’t created it yet, you would run terraform workspace new GCP. Since it already exists here, we simply select it using terraform workspace select GCP.
+
+To be extra careful, we then run terraform workspace show to confirm that GCP is indeed the active workspace. It is, so everything looks correct.
+
+Now it’s time to authenticate.
+
+First, we log in to gcloud. This step may not strictly be necessary if you’ve logged in recently, but it’s a good safety measure to ensure credentials are fresh and valid.
+
+A browser window opens, you click Allow, and authentication completes successfully.
+
+Next, we explicitly set the active project to Cyber Analyzer. Even if it was already selected, running this command removes any ambiguity and guarantees that all subsequent commands apply to the correct project.
+
+Now we move on to Application Default Credentials (ADC).
+
+Terraform uses ADC to authenticate with Google Cloud. This approach is much simpler than AWS IAM and is quite similar to how authentication works in Azure.
+
+We log in using ADC, approve the request, and continue. These credentials will now be used by any library that requests application default credentials — which is exactly what Terraform does.
+
+There’s one more important but slightly fiddly step.
+
+We need to tell Google Cloud that the application default credentials should be associated with a quota project. This determines which project Terraform’s actions are billed against.
+
+Once we run the command, we receive confirmation that the quota project Cyber Analyzer has been added to ADC, and that these credentials can now be used for billing and quota tracking.
+
+Next, we configure Docker authentication so Docker can use our gcloud credentials. This allows us to push container images to Google’s container registry as part of the Terraform workflow.
+
+Once that command completes, we perform a final sanity check to ensure that the active project is still cyber-analyzer. It is, which confirms that everything is correctly authorized.
+
+At this point, authentication is fully complete.
+
+Now let’s look at the Terraform configuration itself.
+
+Inside the terraform/gcp directory, you’ll find a main.tf file. This file is intentionally structured to look very similar to the Azure version we used earlier.
+
+It includes:
+
+Google provider configuration
+
+Docker provider configuration
+
+Docker image build settings, including the correct platform (which is especially important for Mac users)
+
+A Cloud Run service definition
+
+When reviewing the Cloud Run configuration, it’s worth paying special attention to the CPU and memory settings.
+
+This is important because the Semgrep MCP server consumes a significant amount of memory during startup and configuration. If you leave Cloud Run with its default resource limits, the service will fail to start.
+
+This issue caught me off guard initially, and it took some time to diagnose. Explicitly configuring CPU and memory is essential for the MCP server to run correctly.
+
+The configuration also passes API keys as environment variables, defines scaling behavior, includes IAM permissions, and outputs useful values such as the service URL, project ID, and region.
+
+Before deploying anything, we run terraform plan.
+
+This command shows us exactly what Terraform will create when we run terraform apply. The output lists all the resources, including the Google Cloud Run service, confirming that everything we reviewed in main.tf is about to be provisioned.
+
+Once the plan looks correct, we’re ready to deploy.
+
+Now we run terraform apply.
+
+We paste the command, press Enter, and when prompted, we type “yes” to confirm. Terraform begins creating infrastructure on Google Cloud.
+
+The Docker image is built and pushed just like before. This process takes a few minutes. I’ll stay glued to the screen, but I’ll spare you listening to me talk through the entire build process.
+
+# **J) Day 2 - Deploying AI Agents Across GCP and Azure with Container Services**
+
+Well, here we are, and it looks like everything has completed successfully.
+
+Terraform has finished running, and we’ve been given a service URL. I’ll simply control-click on that URL to open it in the browser, and up it comes. We’re now looking at our cyber security analyst application, running live in the cloud. This time, instead of a local or Azure address, it’s hosted on a Google Cloud Run URL under the Cyber Analyzer project.
+
+For comparison, over here we still have the Azure deployment running under Azure Container Apps, which of course has a completely different URL. Despite the different infrastructure underneath, the application itself looks identical.
+
+Now let’s test it.
+
+I’ll open a Python file, specifically air.py, and press the Analyze Code button. At this point, somewhere in us-central-1, a Google data center is spinning up. Cloud Run is launching our container, which means the container we deployed is warming up.
+
+As part of that startup process, the container spawns an MCP server. Because we configured sufficient CPU and memory, it’s able to run successfully. That MCP server then connects to Semgrep and starts running the security analysis for this file.
+
+You already know this flow well by now.
+
+I realize I’m not going to be able to keep this recording going the entire time it takes to return results, so I’ll pause briefly and come back once the analysis completes.
+
+Ah—classic timing. The moment I pressed stop, the results came back.
+
+That’s how long it took.
+
+Here are the results.
+
+The Python code was analyzed successfully. Semgrep found four issues, and the agent identified one additional issue. We see the same familiar findings: two high-severity issues, one critical issue involving eval, and a medium-severity issue related to input validation that was likely added by the agent.
+
+So there we have it.
+
+This is our cyber security analyst application, powered by an MCP server and an agent framework, now fully deployed on Google Cloud Platform using Cloud Run.
+
+What’s particularly striking is how similar everything looks.
+
+On one tab, we’re seeing the application running on GCP Cloud Run. On another tab, the same application is running on Azure Container Apps. And on yet another setup, it’s running locally inside a Docker container on my own machine.
+
+From the browser’s perspective, it’s almost hard to tell that anything has changed at all. The frontend and backend behave exactly the same across all deployments.
+
+Now let’s take a look at observability.
+
+I still have the OpenAI traces open from earlier, so we’ll jump back to the traces view. Right at the top, we can see a new trace has appeared. Clicking into it, we can follow the execution path in detail.
+
+We see the security researcher agent running the Semgrep scan. We can inspect the MCP call itself, see the output, and then observe how that output flowed back into the agent’s final response.
+
+This is a great example of using the OpenAI observability framework to understand exactly how an agent behaves in production, including how it interacts with MCP servers. This kind of visibility is incredibly important when you’re running AI systems in real environments.
+
+In addition to OpenAI’s traces, we can also inspect what happened from GCP’s perspective.
+
+Let’s head over to console.cloud.google.com and select the Cyber Analyzer project. From there, we can search directly for Cloud Run.
+
+Once inside Cloud Run, we see a service called Cyber Analyzer, which was created by Terraform. Clicking into it, we’re now looking at the live Cloud Run service configuration.
+
+From here, we can open the logs.
+
+Sure enough, we see the same Semgrep-related output that we observed when running locally and on Azure. These logs are coming directly from our MCP server and agent, now running inside Cloud Run.
+
+You can even see references to the MCP server itself appearing in the logs. This is the quickest way to get operational insight in GCP: start at Cloud Run and jump straight to logs.
+
+Logging in GCP is a deep topic with a lot of sophistication behind it, but this simple workflow gets you productive very quickly.
+
+We can also check the metrics view.
+
+This gives us a high-level sense of how much CPU and memory were used. Interestingly, the service didn’t actually use that much memory in this run. That said, the default resource limits were still insufficient for the MCP server to start reliably, so the increased allocation was absolutely necessary.
+
+So at this point, we’ve:
+
+Examined OpenAI traces
+
+Reviewed GCP Cloud Run logs
+
+Verified application behavior across local, Azure, and GCP deployments
+
+Everything is working exactly as expected.
+
+Now, back to Cursor.
+
+You know what comes next.
+
+We destroy the infrastructure so we don’t leave anything running unnecessarily.
+
+We copy the terraform destroy command, paste it into the terminal, and when prompted, type yes. Terraform immediately begins tearing everything down.
+
+And once again, the timing is impeccable—it’s already finished.
+
+The infrastructure is gone.
+
+To be absolutely sure, we return to the GCP Console home page and confirm that the Cyber Analyzer project is selected. From here, we navigate back to Cloud Run.
+
+There’s nothing there.
+
+The Cyber Analyzer service is gone, exactly as it should be.
+
+As always, we finish by checking Billing.
+
+We go to the billing overview, review spending, look at budgets and alerts, and confirm that nothing unexpected is running. Everything looks clean and healthy.
+
+This final check is an essential habit whenever you work in the cloud.
+
+And with that, we conclude our journey into GCP.
+
+It was particularly easy, and that’s worth emphasizing. The reason it was easy is because Terraform did the heavy lifting. Now that you’ve seen what’s involved in configuring everything through the console, you can really appreciate how much work Terraform saves you.
+
+The other reason this was smooth is because we chose Cloud Run, a container-based deployment model. Once you have a working Docker container, deploying it with Cloud Run is fast, clean, and reliable.
+
+That said, it’s important not to oversimplify.
+
+Cloud Run isn’t “the best” approach in all cases—it’s just a very effective one, especially when you already have a Docker container and want to deploy quickly to test or production.
+
+Platform-as-a-service options like Vercel, Google App Engine, Azure App Service, or AWS Beanstalk can be even faster to deploy, but they trade flexibility for convenience. When you’re doing something non-standard—like running MCP servers—you often need the control that containers provide.
+
+At the other end of the spectrum, if you need global distribution, API gateways, fine-grained security, rate limiting, and complex architectures, then a serverless or multi-component architecture like the one we built on AWS last week may be more appropriate.
+
+There’s a full continuum of deployment options:
+
+Platform as a Service (simplest)
+
+Container as a Service
+
+Serverless architectures
+
+Traditional servers
+
+Container orchestration (most complex)
+
+Which one you choose depends entirely on your requirements.
+
+In our case, container-based deployment hit the sweet spot. We built one Docker container and deployed it to Azure and GCP in minutes, which is exactly what we wanted.
+
+And on that positive note, that brings us to the end of Week Three, Day Two, and the completion of the cyber security project.
+
+No more GCP.
+No more Azure.
+
+We’re heading back to AWS, and we’re going full purple.
+
+The rest of the week is all about AI:
+
+SageMaker
+
+Vector databases
+
+Data ingestion using MCP servers
+
+There’s a lot coming.
+
+Get plenty of sleep.
+
+Tomorrow, we begin Day Three.
