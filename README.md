@@ -154,6 +154,36 @@ AI Engineer MLOps Track: Deploy Gen AI & Agentic AI at Scale (Older Name - AI in
 
 **J) Day 2 - Deploying AI Agents Across GCP and Azure with Container Services**
 
+**K) Day 3 - Building ALEX: Multi-Agent Financial AI System on AWS Infrastructure**
+
+**L) Day 3 - Setting Up AWS Permissions and SageMaker for Production AI Agents**
+
+**M) Day 3 - SageMaker vs Bedrock: Deploying Custom AI Models in Production**
+
+**N) Day 3 - Deploying SageMaker Embedding Models for Production RAG Systems**
+
+**O) Day 3 - Exploring SageMaker AI's Full Platform for Production ML Workflows**
+
+**P) Day 4 - Building Vector Data Pipelines with SageMaker and S3 for AI Memory**
+
+**Q) Day 4 - Building Cost-Effective Vector Storage with S3 and Lambda Ingestion**
+
+**R) Day 4 - Setting Up Secure AI Ingestion Pipelines with Terraform and AWS**
+
+**S) Day 4 - Testing Your AWS Lambda Vector Ingest Pipeline End-to-End**
+
+**T) Day 5 - Building AI Research Agents with MCP Servers and Data Pipelines**
+
+**U) Day 5 - Building AI Research Agents with Bedrock and OpenAI SDK on AWS**
+
+**V) Day 5 - Deploying AI Research Agents with Docker, ECR, and App Runner**
+
+**W) Day 5 - Testing End-to-End AI Agent Workflows from Research to Vector Storage**
+
+**X) Day 5 - Automating AI Agent Workflows with AWS EventBridge Scheduling**
+
+**Y) Day 5 - Week 3 Wrap-Up: Assignment Options & Production AI Next Steps**
+
 
 
 # **A) Day 1 - Instant AI Deployment: Your First Production App on Vercel in Minutes**
@@ -2831,3 +2861,733 @@ There’s a lot coming.
 Get plenty of sleep.
 
 Tomorrow, we begin Day Three.
+
+# **K) Day 3 - Building ALEX: Multi-Agent Financial AI System on AWS Infrastructure**
+
+This is a big moment in the course, and I want to welcome you and get you excited about what is coming next.
+
+At first glance, it might feel like just another regular day. It’s week three, day three. That doesn’t sound especially dramatic, but it actually is a significant milestone for several reasons.
+
+First, we are returning to AWS. Second, we are switching back to purple days, which means we are returning to AI-related activities. Third—and most importantly—we are beginning the capstone project. This project will carry us through most of the next week and a half, and it is called Alex.
+
+Some of you may already have noticed the name Alex earlier. If you were observant while looking through resources or console screenshots, you probably saw references to it and suspected something was coming. Now, you finally get to see what it is all about.
+
+Alex is a slightly forced acronym, as acronyms often are, but it works. Alex is a financial planner—a commercial platform powered by generative AI. It is designed to act as a retirement advisor and financial planning advisor through an agentic AI system.
+
+The name Alex stands for Agentic Learning Equities Explainer, with the “X” coming from explainer to complete the name. It may be a stretch, but Alex felt like a good, human-friendly name for the platform.
+
+The idea behind Alex is that it is a SaaS commercial application built to be production-ready and scalable. It will be deployed to production and will function as a financial advisor. Alex will be able to review an equity portfolio, assess diversification, evaluate long-term planning, consider retirement goals, and ultimately make recommendations.
+
+The first step we are about to go through today is setup. That includes cloning a new repository. Much of the code is already written for you, because this course is not primarily about writing application code. Instead, it is about deploying real systems. That said, we will still review the code so you understand what is happening.
+
+Today’s focus is on investigating the repository, understanding how the code is structured, and setting up permissions. But before doing any of that, we start with something very important: cost checks.
+
+So let’s head to the AWS console. I’m logged in as the root user, which is appropriate when reviewing billing and IAM. You should see your root user name at the top, just like I do.
+
+The first thing we do is go to Billing and Cost Management. This is something you should check regularly. You’ll likely notice that last month’s spending was higher and this month’s is lower. That’s expected if resources were shut down.
+
+You should carefully review your own costs, check for anomalies, and confirm everything matches your expectations. If something looks off, investigate it immediately. This is also a good reminder to make sure nothing is still running in AWS, Azure, or GCP unless you intentionally left it running.
+
+Once you’re satisfied with costs, it’s time to move on to the new repository for this week. The best way to introduce it is by starting from the main production repository where everything began.
+
+Inside the week three directory, you’ll find a README that covers days one and two, which pointed you to the cyber repository. Now, for day three, we move to a new repository that needs to be cloned.
+
+From the projects directory, open a new terminal window. If you are inside the production directory, move up one level so you are in projects. Then run the provided git clone command.
+
+I’m not going to run it here because I’ve already cloned the repository. It exists in a folder called Alex. Once cloned, change into that directory using cd Alex.
+
+Next, open Cursor, go to File → New Window, and select Open Project. Navigate to the projects directory, select the Alex folder, and open it. You should now see the full Alex repository.
+
+There is a lot going on in this repo, and I want to be honest about that. It can feel overwhelming at first. That’s why we’re spending a week and a half on it. You’ll have plenty of time to become familiar with everything.
+
+The repository is well-structured and thoughtfully organized. We will dig into it piece by piece, so don’t worry if it feels big right now.
+
+At the top level, you’ll see several key directories. There is a backend folder containing all backend services. There is a frontend folder for frontend code. There is a guides folder, which is extremely important—it contains step-by-step recipes for everything we’ll deploy.
+
+There is also a terraform directory. Inside it are multiple subdirectories, each representing a separate Terraform deployment. Each directory has its own Terraform state and is initialized independently, which is a common and practical approach in component-based architectures.
+
+Rather than deploying everything with one massive Terraform script, each component is deployed independently. This makes it easier to learn, debug, and understand. If you wanted, you could later merge everything into a single Terraform deployment.
+
+Inside each Terraform directory, you’ll typically see a .terraform folder, a main.tf file, outputs, and sometimes variables. Today, for example, we’ll be working with the SageMaker Terraform directory, which corresponds directly to Guide 2.
+
+The backend directory contains subdirectories for each backend component. Many of these map directly to either Lambda functions or App Runner services. Some are serverless, others are container-based, similar to what you’ve already seen in earlier weeks.
+
+Most backend components are independent Python projects, often with their own pyproject.toml, virtual environments, and multiple Python files. Each one is effectively its own mini-application.
+
+The guides directory is where we’ll spend much of our time. Guides are numbered, and some days will include multiple guides, while other days will focus on just one. Each guide typically maps directly to a Terraform deployment.
+
+You may notice files like .claude and other hints that I’ve been using Claude Code and Cursor agents while building this project. Claude Code is not required for this course, but if you have access to it, it can be extremely helpful.
+
+I rely heavily on documentation files to guide AI tools. In the guides folder, there is a gameplan.md file. This file explains the entire project structure, goals, and deployment strategy in a way that makes sense to a model.
+
+When I start Claude Code, I ask it to read gameplan.md first. Once it has done that, I can ask it to read a specific guide, and it becomes fully briefed on both the big picture and the immediate task.
+
+You can do the same thing with Cursor agents. Once the model understands the game plan and the guide, it can be incredibly helpful in troubleshooting.
+
+That said, you will encounter problems. I built this project, and when I installed it again later, I still ran into issues. Some were caused by changes in AWS services, others by temporary Bedrock issues.
+
+One model I originally used had a known Bedrock issue that caused errors. It took several hours to track down and confirm that it was not my configuration, but a service-side issue.
+
+This is normal. This is real-world cloud engineering. There are many moving parts—regions, permissions, service changes, and evolving APIs. Problems are expected, and solving them is where the learning happens.
+
+Claude Code can help, but do not blindly trust it. It sometimes jumps to conclusions or repeats mistakes. I’ve even included instructions in the game plan telling it not to do that—but it still does sometimes.
+
+Used carefully, however, it is absolutely a net positive and can significantly increase your productivity. Just make sure you verify everything it suggests.
+
+Finally, there are a few things that are intentionally not included in this project.
+
+Alex does not have separate environments like development, testing, and production. There is only one environment, and we deploy directly to it. This keeps things simple and focused.
+
+We are also not using GitHub Actions. The goal here is to focus on multi-agent production deployment, not CI/CD pipelines. However, you already have those skills from week two.
+
+If you want to add GitHub Actions, multiple environments, and remote Terraform state stored in S3, you absolutely can—and it’s a great extension to this project.
+
+For now, though, we’re keeping it simple: one environment, no GitHub Actions, local Terraform state, and direct deployment.
+
+And with that, we’re ready to begin.
+
+# **L) Day 3 - Setting Up AWS Permissions and SageMaker for Production AI Agents**
+
+We’re now inside the Alex project. The first thing I’m going to do is open the guides folder. The very first guide is called permissions. I’ll right-click on it and choose Open Preview.
+
+As you already know, we often begin by looking at permissions, and this project is no exception.
+
+The guide begins with a short introduction to Project Alex, the Agentic Learning Equities Explainer—an AI-powered personal financial planner. It gives you a bit more context about what’s coming, including portfolio analysis, retirement planning, and long-term financial decision-making. I’ll go deeper into all of that over the next few days as we build things out.
+
+Next, you’ll see an architecture diagram. For now, I want you to deliberately look away from it. I’ll walk you through the architecture properly once our permissions are fully set up. You’re welcome to take a quick peek, but we’ll come back to it in detail later.
+
+The main goal of this guide is to set up all the permissions we need to execute the overall plan. It also explains how infrastructure management works in this project—specifically, that we are using multiple Terraform deployments, each in its own directory. The guide outlines the pros and cons of this approach, which we’ve already discussed.
+
+It also reminds you to make sure you have an AWS account with root access. This is one of the few times we actually need root access, because we are setting up IAM permissions. It also assumes that your AWS CLI is installed and configured, which should already be true if you’ve made it this far in the course.
+
+There’s also a note about the architecture diagrams themselves. These diagrams are written using Mermaid, which is a diagramming syntax for Markdown. If the diagrams don’t render properly for you, you’ll need to install a Cursor extension.
+
+To do that, press Command + Shift + X on a Mac or Control + Shift + X on Windows to open the extensions panel. Search for “Mermaid” and install the Markdown Preview Mermaid extension. I already have it installed, which is why the diagrams render correctly for me. Once that’s done, you can return to the file explorer using Command + Shift + E or Control + Shift + E.
+
+With that out of the way, it’s time to move to the AWS console. Make sure you sign in as the root user, and I’ll meet you there.
+
+Now we’re in the AWS console, and you can see that I’m signed in as my root user. The guide instructs us to navigate to IAM, then go to Policies, and create a new policy.
+
+We’re going to paste in a block of JSON provided in the guide and save the policy as Alex S3 Vectors Access.
+
+This is a bit of an advanced move. We’re going to be using a relatively new AWS feature called S3 Vectors, which allows vector storage directly in S3. Because this feature is new, AWS does not yet provide pre-built managed policies for it. That’s why we need to create a custom policy manually.
+
+So, in IAM, go to Policies, click Create policy, switch to the JSON tab, and paste in the policy exactly as shown in the guide. Once you do that, save it with the name Alex S3 Vectors Access.
+
+I already have this policy created, so I can see it listed in my account. Yours won’t be there yet, so make sure you create it carefully.
+
+Next, we’re going to create a new user group. This should feel familiar, because we’ve done this before. Go to User groups, click Create group, and name it Alex Access.
+
+To this group, attach the following policies:
+
+SageMaker Full Access
+
+Bedrock Full Access
+
+CloudWatch Events Full Access
+
+Alex S3 Vectors Access (the custom policy you just created)
+
+These four policies are required for now. When you create the group, attach them all.
+
+If you look at my setup, you’ll notice that I actually have a few extra policies attached as well. These will be needed later in the project. Pro tip: if you want to save yourself time later, you can take a screenshot of my permissions and add all of them now. That’s optional, but it will reduce friction later on.
+
+Once the group is created, make sure it is attached to your IAM user, AI engineer. After that, go back to User groups, click into Alex Access, and verify that the permissions and users look correct.
+
+At this point, the Alex Access group should be fully set up and associated with your AI engineer user.
+
+Now, sign out of the AWS console as the root user. You should never stay logged in as root longer than necessary. Sign back in using the AI engineer user instead.
+
+Once you’re logged in as AI engineer, let’s verify everything from the command line. Open a new terminal in Cursor and run the command to check who is logged in.
+
+If the output doesn’t look right, run aws configure and log in again. In my case, everything checks out. I can see my user ID, my account number, and the ARN for the AI engineer user.
+
+Next, run the command to list SageMaker endpoints:
+
+aws sagemaker list-endpoints
+
+
+You might be wondering why we’re calling SageMaker before we’ve even talked about it. Don’t worry—we’re just checking permissions. The command succeeds, I can access SageMaker, and there are no endpoints yet. That’s exactly what we expect.
+
+Now we move on to some local project setup.
+
+From the Alex root directory, we need to create an environment file. There’s already a template called .env.example. Copy this file and name the copy .env.
+
+You can do this either from the terminal or by right-clicking and copying it in the file explorer. Just remember: the file must be called exactly .env. Nothing more, nothing less.
+
+Next, we need your AWS account ID. If you don’t already know it by heart, copy it from the CLI output. Then open the .env file and paste your account ID into the appropriate field.
+
+Make sure you use your account ID, not mine.
+
+You’ll also set your default AWS region. Mine is us-east-1, but you should choose the region that makes the most sense for you. This region will be used as the default when we provision infrastructure.
+
+As we go through the next week and a half, we’ll keep adding more values to this .env file.
+
+One important thing to understand is that we will be using two different places for configuration. The .env file is for local secrets and application configuration used by Python services. Terraform, on the other hand, uses terraform.tfvars files for infrastructure variables.
+
+Both files are git-ignored, so nothing sensitive is ever checked in. Sometimes you’ll need to put the same value in both places. In real projects, teams often write scripts to sync these automatically, but those scripts can be error-prone.
+
+For clarity and simplicity, we’re keeping things manual. That way, it’s always obvious what goes where, and when something breaks, you know exactly where to look.
+
+With that, we’ve completed the first lab of the Alex project. This was all setup and preparation—but it’s critical groundwork.
+
+We’re not done for the day, though. There’s one more lab coming up, and it’s a big one.
+
+Next, it’s time to talk about SageMaker—what it is, why we’re using it, and how it fits into Project Alex.
+
+# **M) Day 3 - SageMaker vs Bedrock: Deploying Custom AI Models in Production**
+
+Amazon SageMaker is one of AWS’s core services for AI and machine learning projects. In particular, it is designed for end-to-end machine learning workflows, covering everything from building and training models to deploying them into production.
+
+SageMaker supports both sides of the machine learning lifecycle. On one side, it handles training and fine-tuning jobs. On the other, it provides scalable, production-grade model hosting. This makes it a complete platform for moving models from experimentation all the way into real-world usage.
+
+In this course, we are not going to focus on training models inside SageMaker. Instead, we will use SageMaker primarily for deploying open-source models in inference mode. That said, if you have taken my companion LLM engineering course and are already familiar with fine-tuning models, you could absolutely experiment with that side as well. The two courses are designed to complement each other nicely.
+
+At its core, SageMaker is built for MLOps. MLOps is essentially DevOps for machine learning. It’s about managing the entire lifecycle of a model in a robust, repeatable, and production-ready way. This includes tracking experiments, versioning data and models, automating retraining, and monitoring model performance in production.
+
+That naturally leads to an important question: if SageMaker does all this, then what exactly is Bedrock, and how is it different?
+
+Bedrock and SageMaker solve different problems. Bedrock’s goal is to give you easy access to foundation and frontier models, such as Anthropic’s Claude or AWS’s Nova models, through a simple, managed API. Think of Bedrock as a router for large, proprietary models, fully managed by AWS and billed directly to your AWS account.
+
+SageMaker, on the other hand, operates at a much lower level. It’s far more detailed and hands-on. SageMaker is about building, training, tuning, and deploying your own models, or deploying open-source models that you control directly. Instead of choosing from a small set of managed models, SageMaker lets you work with virtually any Hugging Face model or your own custom architectures.
+
+In terms of effort, Bedrock is intentionally simple. You configure access, choose a model, and start calling an API. SageMaker requires more setup and understanding, because you are responsible for how the model runs, how it scales, and how it is monitored. We won’t go extremely deep in this course, but you’ll get a strong sense of how powerful—and complex—SageMaker can be.
+
+Deployment is another key difference. With Bedrock, AWS provides fully managed endpoints that you simply consume. With SageMaker, you create your own endpoints. Earlier, we ran a command to list SageMaker endpoints and saw an empty list. Soon, we’ll create our own endpoint—one that we control, scale, and monitor ourselves.
+
+So when should you use each service?
+
+You typically use Bedrock when you want to work with frontier models for scalable inference, just like we did with the Twin project in week two. SageMaker is more appropriate when you want to deploy a custom or open-source model, potentially train it, fine-tune it, and manage it closely over time.
+
+A useful (if slightly simplified) way to think about it is this: Bedrock is like using the OpenAI Python client—you call a powerful model through an API. SageMaker is more like working directly with Hugging Face code, lifting the bonnet and interacting with the engine itself. That’s the level we’ll be operating at with SageMaker.
+
+We’ll only scratch the surface of SageMaker in this course, but it’s a fascinating rabbit hole if you want to go deeper later.
+
+Earlier, I mentioned the term MLOps, so let’s briefly unpack that a bit more.
+
+MLOps is one of those terms that can mean different things depending on context. Sometimes people use it broadly to describe everything involved in operationalizing AI systems—cloud deployments, pipelines, monitoring, and automation. In that sense, much of this entire course could be considered MLOps.
+
+More commonly, though, MLOps refers specifically to managing machine learning models in production. It’s about tracking datasets, model versions, and training configurations so that experiments are reproducible. It’s about monitoring models once they’re deployed and ensuring they continue to perform well over time.
+
+One important concept in MLOps is model drift. Over time, the real world changes, and models trained on old data can become less accurate. A classic example is COVID—models trained before the pandemic had no awareness of it. As a result, their performance degraded until they were retrained on newer data.
+
+Detecting model drift, observing performance drops, and retraining models to correct for it are core MLOps responsibilities.
+
+SageMaker is built specifically to support these workflows. It includes experiment tracking, a model registry for versioning, monitored endpoints, and automation tools for retraining. In many ways, SageMaker is AWS’s MLOps platform.
+
+With that introduction, we’re ready to return to our lab and start working seriously on Alex.
+
+Next week is when we’ll build and deploy the agentic platform behind Alex itself. This week, however, we are focusing on the data side of the project.
+
+That means we’ll be working not only with SageMaker, but also with data engineering concepts. Data engineers in particular are going to enjoy this part. We’ll be building data ingestion pipelines so that Alex can continuously learn from new information in financial markets, retirement planning, and broader financial knowledge.
+
+The goal is for Alex to always be learning. To do that, we need pipelines that ingest new data, convert it into embeddings, and store those embeddings in a vector data store.
+
+This week, we’ll build those foundations. Today, we’ll start with the first step: taking text, converting it into vectors using an open-source model deployed on SageMaker, and storing those vectors in S3 Vectors.
+
+That SageMaker deployment—the text-to-vector model—is the first major piece of the puzzle.
+
+# **N) Day 3 - Deploying SageMaker Embedding Models for Production RAG Systems**
+
+Here we are back in Cursor, inside the Alex project, and once again inside the guides folder. I want to briefly reopen the permissions guide in preview mode to show you the image at the top of the document.
+
+That architecture diagram should now start to make a little more sense. We’ll continue revisiting and unpacking it over time, but at this point you can already see the shape of what we’ll be building this week—specifically, the data ingestion side of Alex.
+
+What’s happening here is that something kicks off a process that calls App Runner, which performs research. That research then flows into a Lambda function, which in turn calls a SageMaker endpoint. That endpoint converts text into vectors, and those vectors are stored in S3 Vectors, forming a structured, row-style knowledge base that we can later retrieve from.
+
+If you’re new to RAG, vector storage, or embeddings, this may feel a bit abstract. If that’s the case, my companion LLM Engineering course, particularly week five, goes deep into these concepts. But for many of you, this should already feel familiar—you understand how text embeddings work and how they support retrieval-based systems.
+
+With that context in place, we’re ready to move on to the second lab: SageMaker. This is where we deploy a serverless SageMaker endpoint.
+
+Welcome back. In this guide, we’re going to deploy a SageMaker serverless endpoint that generates embeddings—vectors that will power Alex’s knowledge base. You already know why we’re using SageMaker, so we won’t dwell on that again.
+
+The model we’re going to use is all-MiniLM-L6-v2, a popular Hugging Face sentence-transformer model. If you’ve taken my LLM Engineering course, you’ll recognize it from week eight. It’s widely used, extremely fast, and well-suited for embedding generation.
+
+We’ll deploy this model using a serverless endpoint, and we’ll build that infrastructure using Terraform. Since we’ve already completed the permissions lab, we’re ready to proceed.
+
+Let’s do it.
+
+The first step is to configure our Terraform variables. Open the terraform directory and you’ll see that, as promised, it contains separate subdirectories for each guide. We’re going to open the directory named 2_sagemaker, which maps directly to this lab.
+
+Inside that directory, you’ll find a terraform.tfvars.example file. Copy this file and rename it to terraform.tfvars. I won’t be able to do this myself because I’ve already completed this step, but you should do it now.
+
+Once the file is created, open it. You’ll see a single variable for the AWS region. Mine is set to us-east-1, but you should use whatever region you selected earlier. Make sure the region name is spelled exactly correctly—one missing hyphen will cause Terraform to fail.
+
+With that done, we can move on.
+
+At this point, I strongly recommend opening the main.tf file and reading through it in your own time. You don’t need to understand every line right now, but it’s useful to get a feel for what’s being created.
+
+At the top, you’ll see the standard provider configuration. Then we define an IAM role for SageMaker. After that, we create a SageMaker model using our embedding model. We also define a serverless configuration, which specifies memory size and the maximum number of concurrent requests.
+
+There’s a small delay resource included to make sure everything initializes correctly—this is just an infrastructure timing safeguard, and you don’t need to worry too much about it.
+
+Finally, we define the most important resource: the SageMaker endpoint itself. This endpoint is configured using the serverless settings defined earlier. That’s the key piece of infrastructure we’re creating here.
+
+To actually deploy all of this, there are only two Terraform commands we need to run.
+
+First, from inside the 2_sagemaker directory, run terraform init. If this is your first time running it, Terraform will download providers and set up state. If you’ve already run it before, it will complete almost instantly. It’s safe to run multiple times.
+
+Once that completes, run terraform apply. Terraform will show you a plan describing what it’s about to create. When prompted, type yes, and Terraform will begin provisioning the infrastructure.
+
+At this point, AWS is creating our SageMaker endpoint. This endpoint will host the all-MiniLM-L6-v2 model and allow us to convert text into vectors. There’s an intentional delay in the process, so expect it to take a little time.
+
+I’ll pause here and come back once it’s finished.
+
+For me, the deployment completed in about two and a half minutes. Terraform reports that it created an IAM role, the SageMaker model, and the serverless endpoint.
+
+The output also includes important information, such as the endpoint name, which in this case is alex-embedding-endpoint.
+
+That endpoint name needs to exist in your .env file. In the default setup, it’s already there. If you chose a different name for your endpoint, you’ll need to update the .env file accordingly. Otherwise, there’s nothing more to do here.
+
+If you ever need to see this output again, you can run terraform output from the same directory.
+
+Now it’s time to test everything.
+
+We’re going to move into the backend directory. Navigate back up to the project root, then into backend. The commands here are cross-platform, even though directory separators differ slightly between macOS and Windows.
+
+Inside the backend folder, you’ll find a file called vectorize.json. Open it up and you’ll see it contains a simple piece of text: "vectorize me".
+
+Our goal is to send this text to the SageMaker endpoint and see what it looks like as a vector.
+
+We do this by calling the SageMaker runtime, invoking our endpoint, passing in the JSON payload, and printing the result. This command sends a request to the SageMaker endpoint we just deployed.
+
+When we run it, the response comes back immediately—a vector.
+
+This is a 384-dimensional embedding, which represents the semantic meaning of the phrase “vectorize me” according to the model. That confirms that our endpoint is working correctly.
+
+At this point, we have successfully deployed an open-source model to a SageMaker serverless endpoint, and we can access it programmatically. The endpoint is live, operational, and producing embeddings.
+
+It’s also extremely inexpensive. Always double-check current AWS pricing, as it can change, but this type of endpoint is very cheap to run—especially for experimentation. That said, I still recommend destroying infrastructure when you’re finished working with it.
+
+With that, we’ve successfully deployed our first SageMaker model into production.
+
+# **O) Day 3 - Exploring SageMaker AI's Full Platform for Production ML Workflows**
+
+So I thought it was worth taking a moment to look at SageMaker itself, just to give you a sense of the breadth of capability it offers.
+
+From the AWS console page, I go to SageMaker—but actually, I don’t go to “SageMaker” directly. I go to SageMaker I, which is the new branding for SageMaker. I think most people still just call it SageMaker, but officially it has been rebranded as SageMaker I.
+
+Once you’re there, you can see that there are a few different sections, and it’s helpful to understand what each of them does. This really is the home for a professional data scientist—someone who does this kind of work for a living. SageMaker I provides a full set of tooling to support the entire data science and machine learning workflow.
+
+Under Applications and IDEs, you’ll find some of the higher-level tools. One of the key ones is SageMaker Studio, which is described as an IDE for data scientists. This is where you can train models, debug them, track experiments, and generally manage your ML development work.
+
+There is also TensorBoard, which will be familiar to those of you who work with TensorFlow. In addition, there are Notebooks, which many of you will recognize. These are essentially JupyterLab environments running in the cloud. You can see them listed here and use them directly. In many ways, this is Amazon’s answer to Google Colab, and it serves as an alternative if you prefer to work entirely within the AWS ecosystem.
+
+Beyond that, there are various configuration options. Under JumpStart, you’ll find Foundation Models, where you can browse the different open-source models that AWS provides. There is also Ground Truth, which is used to manage datasets and support training workflows for different types of training jobs.
+
+Another important section is Inference. If you expand Inference and then go down to Endpoints, you’ll see exactly what we’ve been working with. This is where our Alex embedding endpoint lives. As you can see, it’s tucked away as a submenu of a submenu, which is very common in SageMaker.
+
+Even though inference endpoints are buried a couple of levels deep, they are extremely important. In fact, it’s very common for people to use SageMaker primarily for inference endpoints, especially in production systems. This is exactly the part of SageMaker that we’ve been focusing on.
+
+Hopefully, this gives you a better sense of perspective on the breadth of capabilities offered by Amazon SageMaker I.
+
+And that wraps up week three, day three, and our SageMaker exploits—more specifically, SageMaker inference endpoints. What we’ve done here is really just a teaser, a taste of what SageMaker can offer.
+
+Tomorrow, of course, we’re going to take this one step further. We’ll pull this into a data ingest pipeline, where we’ll take the vectors generated by our embedding endpoint and store them in S3 Vectors, using a Lambda function to manage that process.
+
+That’s going to be exciting, because it marks the start of our data ingest work. The data engineers among you are especially going to enjoy what’s coming next.
+
+But for everyone—congratulations. You’ve reached the 65% point. It’s been a purple day today, an “I” day, and it’s been a fun one. Tomorrow will be another purple day.
+
+# **P) Day 4 - Building Vector Data Pipelines with SageMaker and S3 for AI Memory**
+
+Look, I promised you a juicy course. And if you think that Alex is already looking like a juicy project, you haven’t seen anything yet. We’re getting even more stuck into it today, and there’s a lot to cover.
+
+Welcome to another purple day, another AI day. Today is all about data ingest, and in particular, using an embedding model—an encoder that we deployed yesterday—to create vectors and store them in S3 Vectors, a new type of storage offered by AWS.
+
+So let’s get to it.
+
+First, a few quick recaps.
+
+The project we’re working on, of course, is Alex, our capstone project and SaaS financial planner. Next week is when we’ll really start building out Alex as an Agentic AI platform. This week, however, is focused entirely on the data ingest side—giving Alex its memory, its understanding of financial markets, and its knowledge of retirement planning.
+
+We started our setup by cloning a repository. Alex now exists as a local project with separate Terraform directories for each of the different deployment steps we’ll be taking. Each of these directories contains its own tfvars file for configuration. There’s also an .env file in the project root that holds overall secrets governing the entire project.
+
+We’re keeping things intentionally simple. We’re only working with a single environment—no separate dev or test environments—and we’re not using GitHub Actions. That said, you’re very welcome to add those yourself if you’d like. There’s something incredibly satisfying about doing a git push and watching everything roll out automatically.
+
+Yesterday, we played around with SageMaker for the first time. We created an inference endpoint using an embedding model—a Sentence Transformers model from Hugging Face called all-MiniLM-L6-v2. This is a model designed to take text and convert it into a vector.
+
+What we’re building today is the data ingest Lambda function that will call that embedding endpoint and store the resulting vectors in S3 Vectors.
+
+And just to be a little repetitive—because sometimes it really helps to hear things twice—it’s worth reminding ourselves of the difference between Bedrock and SageMaker.
+
+Bedrock is about building with frontier models. It lets you run inference at scale using models like Nova and Claude. SageMaker, on the other hand, is much more of a data scientist’s platform. It’s DevOps for data scientists. It’s where you manage the complete lifecycle of model development: training models, managing experiments, versioning models and datasets, and deploying inference endpoints.
+
+As we saw, SageMaker even has its own cloud-based Jupyter notebooks—essentially AWS’s version of Google Colab—and a fully featured IDE built in. There’s a lot there for data scientists to experiment with, and we’ve barely scratched the surface by deploying a single inference endpoint.
+
+We also talked about MLOps. That term can be used in different ways. Sometimes it refers broadly to everything we’re doing in this course—platform engineering for AI. More commonly, though, it refers specifically to managing different versions of models and datasets and handling the lifecycle of machine learning systems in production.
+
+When MLOps is used in that sense, SageMaker is one of the go-to platforms on AWS. It’s AWS’s core MLOps platform.
+
+We also discussed model drift—the idea that models can degrade in performance over time as language and the world itself evolve. This is something you need to monitor for, measure, and respond to by retraining models when necessary. SageMaker gives you the tools to do that, and I encourage you to explore more of its functionality yourself.
+
+If you’ve taken the LLM Engineering course, for example, you could take the models you trained there and experiment with deploying them into SageMaker.
+
+Over the last couple of days, I’ve shown you a teaser of Alex’s deployment and data ingest architecture. Here’s a simplified version of what we saw earlier in the more complex Mermaid diagrams.
+
+Alex will have a scheduler—a Lambda function—that wakes up every two hours and says, “Okay, it’s time.” When that happens, it kicks off an App Runner service. That service launches something called the researcher, which is an agent running inside a container.
+
+This researcher has access to an MCP server, because we want to experiment with different integration patterns. It also runs a Playwright browser, allowing it to perform real research on the web. The result of all this activity is information that Alex wants to add to its memory.
+
+This is a classic RAG-style process, where some event or workflow produces new data that needs to be ingested and stored. Using a researcher agent with an MCP server is an interesting way to generate data automatically, but in your own business projects this could just as easily be driven by incoming data feeds, news releases, or internal company documents.
+
+Of course, the researcher needs a model to do its work. It uses Bedrock to call a frontier model, which in turn interacts with the MCP server. Once the researcher has finished its work and found information worth storing, it passes that data to a Lambda function called ingest.
+
+The ingest Lambda function is responsible for taking that data and storing it in Alex’s memory. And how do large language models store memory? They use vector data stores, which allow them to retrieve relevant information efficiently through RAG processes.
+
+So the ingest Lambda takes the text produced by the researcher and converts it into a vector. To do that, it calls the SageMaker inference endpoint we deployed yesterday—the open-source Sentence Transformers model running on SageMaker. Once the vector is created, it’s stored in a vector store.
+
+The vector store we’re using is S3 Vectors. You can think of it like S3—a bucket—but specifically designed for storing vectors. This is a relatively new AWS offering, and it’s extremely cost-efficient.
+
+Previously, I used an alternative called OpenSearch, which turned out to be quite expensive. You may already know this if you’ve seen it show up in my Cost Explorer—I spent around $50 or $70 just experimenting with it. Between the OpenSearch cluster and the domain name, it quickly became clear that it wasn’t cost-effective for our use case. S3 Vectors, on the other hand, is perfect.
+
+So that’s what the ingest Lambda function will use to store both the vectors and the associated text so they can be retrieved later.
+
+That’s the data ingest architecture we’ll be building today and tomorrow.
+
+So what are we doing today specifically?
+
+Today, we’re focusing on just one part. We’re building the ingest Lambda function. It will call our SageMaker endpoint and store vectors in S3 Vectors. That’s it—simple and focused.
+
+We’ve already built the purple component. Today, we’re building the blue pieces around it.
+
+So let’s get right to it.
+
+Let’s go back to Cursor, back into the Alex project repository, and get to work.
+
+# **Q) Day 4 - Building Cost-Effective Vector Storage with S3 and Lambda Ingestion**
+
+So here we are in the Alex project, and we’re going to start by going into the guides directory. It’s time for us to look at the third guide, titled Ingest.md – Ingestion pipeline with S3 Vectors.
+
+In this guide, we’re going to deploy a cost-effective vector storage solution using S3 Vectors, which is around 90% cheaper than OpenSearch. Alongside that, we’ll deploy a Lambda function for document ingestion, as well as an API Gateway with API key authentication, integrated with the SageMaker embedding endpoint.
+
+The reason we’re using API Gateway here is that this is the kind of bulletproof, production-grade setup you’d normally put in place to ensure proper security and controlled access to your ingestion pipeline.
+
+So let’s get started.
+
+The guide begins with a brief explanation that S3 Vectors is AWS’s new native vector storage solution. It’s important to note that this is different from standard S3—“S3 Vectors” is a specific service and is written as two words, not a single bucket type.
+
+The first thing we’re going to do is create our S3 vector bucket. We’re intentionally not using Terraform for this, because this is meant to be a one-time setup that should persist even if we tear down and recreate our infrastructure. We want this bucket to remain in place.
+
+Because of that, once you’re finished with the course, this will also be something you’ll need to delete manually through the AWS console. You’ll see it later in the Resource Explorer. We want this to be done the old-fashioned, manual way.
+
+So let’s head over to the AWS console to create the bucket.
+
+Here I am logged in as my IAM user, which you can see in the top right—AI engineer, not editor. I’m going to search for S3 and navigate to the S3 service.
+
+Once inside S3, I’ll go to the left-hand menu and select Vector Buckets. This is where S3 Vectors live. Since you haven’t created one yet, your screen will be empty. To get started, you’ll click Create vector bucket.
+
+For the bucket name, you should use the format:
+alex-vectors-<your-account-id>
+
+The reason for this is that S3 buckets exist in a global namespace, meaning the name must be unique across all AWS users. Including your account ID is a reliable way to ensure uniqueness. If, for some reason, that exact name is already taken—even with your account ID—just append a letter or number at the end. That’s perfectly fine, as long as the name is unique and you keep track of it.
+
+Once the bucket name is set, you can keep the default encryption settings. After that, you need to create an index inside the bucket.
+
+The index must be configured with 384 dimensions, because that is the dimensionality of the all-MiniLM-L6-v2 embedding model we’re using. This part is important—if the dimension count doesn’t match, things won’t work correctly.
+
+For the distance metric, choose cosine similarity, which is the most commonly used similarity measure for embedding vectors. Finally, name the index financial-research.
+
+If I click into my own vector bucket—Alex Vectors—you can see that I have exactly one index configured. It’s called financial-research, it’s set up correctly, and it’s running. You should have the same setup on your side before moving forward.
+
+Now that the vector storage is ready, we’re going to deploy a Lambda function called ingest.
+
+Let’s take a look at what this ingest function does. In the backend directory, there’s a folder called ingest. If you open it, you’ll see that it’s a complete UV-managed Python project on its own. It has its own virtual environment, its own pyproject.toml, and an important Python module called ingest_s3_vectors.py.
+
+Let’s pause and look at that module for a moment.
+
+This file defines a standard Lambda handler function, which you might remember from week two. This handler is what AWS Lambda invokes when the function is called. Its purpose is simple: it expects some text as input, converts that text into a vector, and writes the result into S3 Vectors.
+
+The function reads configuration values from environment variables, including the name of the vector bucket, the SageMaker endpoint name, and the index name. If no index name is provided, it defaults to financial-research.
+
+When the Lambda handler is invoked, it does exactly what it says on the tin: it calls the SageMaker embedding endpoint, transforms the text into a vector, and stores that vector in the S3 vector bucket. That entire operation happens inside this one handler function.
+
+Now let’s look at how we deploy this Lambda.
+
+There’s another Python module in the same directory called package.py. This is a utility script whose sole job is to package the Lambda function for deployment.
+
+Here’s how it works. The script creates a temporary directory called build. Inside that directory, it copies everything needed to run the Lambda function, including ingest_s3_vectors.py. It then zips the contents into a deployment archive called lambda_function.zip. Once that’s done, it cleans up the temporary build directory.
+
+This is a very standard approach. You write your Lambda logic in one module, and then you use a separate script to bundle it into a ZIP file that AWS Lambda can deploy. It’s very similar to what we did back in week two.
+
+Now it’s time to actually run this.
+
+Open a new terminal window. From the project root, navigate into backend, then into ingest.
+
+Once you’re there, run:
+
+uv run package.py
+
+This executes the packaging script we just discussed. You’ll see a few print statements as it runs, and then it completes very quickly.
+
+At the end, you’ll see a file called lambda_function.zip sitting in the directory. It’s about 15 MB in size, which is perfectly fine. This is our Lambda deployment package, and it’s ready to go.
+
+And now, with that prepared, it’s time for us to move on to the Terraform part.
+
+# **R) Day 4 - Setting Up Secure AI Ingestion Pipelines with Terraform and AWS**
+
+Okay, so now we just need to set up our Terraform. If you come into the Terraform section on the left, you’ll see that there’s a third section called “03-ingestion.” That’s the section we’re working on right now.
+
+The first step is to set up our Terraform variables. There’s an existing file called terraform.tf.example. You need to take this file, copy it, and duplicate it to create your own terraform.tf file, which you’ll then update.
+
+If you open this file, you’ll see that you need to change the region to whatever AWS region you’re using. You’ll also see the SageMaker endpoint name. By default, this is set to alex-embedding-endpoint, and that should already match what you created earlier. If, for any reason, your endpoint has a different name, then you should update it here accordingly.
+
+Once you’ve done that, your Terraform variables are set up and you’re almost ready to go. Before running anything, it’s worth taking a quick look at main.tf, which is the Terraform file that actually creates all of this infrastructure.
+
+In main.tf, you’ll see the usual provider configuration at the top. Below that is the Terraform code that sets everything up. First, there’s an AWS S3 bucket, with a bucket name in the format alex-vectors-<account-id>. If you had to choose a different bucket name for any reason, you would update it here, but otherwise the default should work perfectly.
+
+Next, you’ll see configuration for S3 bucket versioning, followed by configuration for server-side encryption. After that, there’s the IAM setup, which gives Lambda the permissions it needs to access other AWS services. This includes the IAM role and policy that allow Lambda to do its job properly.
+
+Then we define our AWS Lambda function, which is called alex-ingest. This Lambda function uses the IAM role we just created, which gives it the permissions it needs. The code for the Lambda function comes from a zip file located two directories up, inside backend/ingest, and the file is called lambda_function.zip, which we created earlier.
+
+We also specify the handler, which should look familiar from week two, and we set the timeout to 60 seconds. That’s all the Lambda function needs in order to run correctly.
+
+After that, we set up an API Gateway. This API Gateway will be used for ingestion. You can read through the configuration to see which routes are supported and how the API is wired up to the Lambda function. Using API Gateway like this is a standard way to build secure, scalable, production-grade endpoints.
+
+You’ll also see that the API Gateway is configured to require an API key. This ensures that only approved clients can use the endpoint. On top of that, we set quota and throttling limits, which control how much data can be ingested and how frequently requests can be made. This combination of API keys, quotas, and throttling is a very robust way to protect and scale production endpoints.
+
+To recap so far, we’ve set our configuration variables, including the AWS region and the SageMaker endpoint name. Now it’s time to actually run Terraform.
+
+Open a new terminal, navigate into the terraform directory, and then into the 03-ingestion directory. From there, run terraform init. If you’ve already run it before, it won’t do much, but otherwise it will initialize the Terraform environment.
+
+Next, run terraform apply. Terraform will first create a plan and then ask you to confirm. You need to type yes to confirm that you want to build the infrastructure.
+
+Terraform will then start creating all the resources we just looked at. This includes setting up IAM permissions, creating and uploading the Lambda function, configuring the handler, and setting up the API Gateway with all of its security and scalability settings.
+
+Once this finishes, Terraform will output several important values. It will show you the vector bucket name, which should be the bucket you expected. It will also show you the API endpoint, which is the URL you’ll use for ingestion. Finally, it will give you instructions for how to retrieve your private API key.
+
+At this point, Terraform will tell you that you need to save this configuration in your .env file. The first thing you need to do is run the command that Terraform outputs to retrieve the private API key. This command will immediately print your API key in the terminal. You should run this locally, but you should never share or record this key publicly, as that would be very insecure.
+
+After you’ve retrieved the API key, you need to update your .env file. The instructions shown may look like macOS commands, but if you’re on Windows or another system, it’s easiest to just open the file directly in the file browser and edit it.
+
+Go to the project root, find your .env file, and open it. In the Part 3 section, you’ll need to add or update three values. The vector bucket should be set to the bucket name Terraform output. The Alex API endpoint should be set to the API endpoint Terraform output. Finally, the Alex API key should be set to the private API key you retrieved earlier.
+
+If you ever forget these values, you can always retrieve them again later by running terraform output.
+
+With that done, your ingestion infrastructure is fully set up. Go ahead and update your .env file, and once that’s complete, you’re ready to move on to the next step.
+
+# **S) Day 4 - Testing Your AWS Lambda Vector Ingest Pipeline End-to-End**
+
+Okay, I’ve done that, and I hope you have too. One important thing to remember is that every time you deploy step three, Terraform will recreate a new API key. That means you’ll need to update your configuration again with the latest endpoint and API key each time you redeploy.
+
+Now it’s time to test what we’ve built and make sure everything is working as expected. We’ll do this by running a few test scripts. These scripts are located in the backend/ingest folder.
+
+There are a couple of scripts we’ll be using. The first is test_ingest_s3_vectors, which runs an ingestion test. The second is test_search_s3_vectors, which searches to see what’s stored in the vector bucket. There’s also another useful script called cleanup_s3_vectors, which deletes everything in the bucket if you want to start completely fresh.
+
+We’re going to begin now. The guide suggests starting with an ingest, but instead, we’ll start with a search to confirm that the data store is empty before we add anything. That way, we can clearly see the transition from empty to populated.
+
+Before doing anything else, we run uv run test_search_s3_vectors. When we run this, it finds no results at all, which is exactly what we expect. The script lists all vectors and finds none. It then runs a few example searches to see what’s closest to topics like electric vehicles and sustainable transportation, and again, it finds no results for any of them.
+
+This confirms that everything is empty and freshly created, which is exactly where we want to start.
+
+Next, we’re going to run uv run test_ingest_s3_vectors. Before doing that, it’s worth quickly looking at what this test actually does. The script calls our ingest API endpoint and sends documents to be ingested.
+
+Specifically, it ingests three pieces of text. One is about Tesla Inc., another is about Amazon, described as a multinational technology company, and the third is about NVIDIA. These three documents are sent through our Lambda ingestion endpoint to test whether they are successfully processed and stored in our S3 vector data store.
+
+With that understanding, we run uv run test_ingest_s3_vectors. The script appears to run successfully. Now the real test is whether the data is actually there.
+
+To confirm, we run test_search_s3_vectors again. This time, we immediately see results. That’s great. The search returns three results, corresponding to Amazon, NVIDIA, and Tesla.
+
+Since there are only three vectors in the system, each search returns those same three results. This confirms that the ingestion worked exactly as expected.
+
+At this point, the test has succeeded. We have successfully deployed a Lambda ingest function that can be called with text. When it receives text, it sends that text to the SageMaker endpoint, converts it into vectors, and stores those vectors in an S3 vector data store.
+
+On top of that, we’ve deployed an API Gateway that requires an API key and enforces scalability and security constraints. This means the entire setup is deployed in a bulletproof, production-ready way, and it was all done automatically using Terraform.
+
+Our test scripts have worked perfectly, which means we’re in great shape.
+
+If you scroll further down in the setup guide, you’ll also see an architecture diagram. This diagram is a more detailed version of the one shown in the slides. It shows the client—which in this case is just a test script—calling the API Gateway using a secret API key for security.
+
+The API Gateway then invokes the Lambda function that we deployed. That Lambda function calls the SageMaker endpoint, which is using the all-MiniLM-L6-v2 model. This model generates 384-dimensional vectors that represent the input text. Those vectors are then stored in S3 vectors in the Alex bucket.
+
+This completes our data ingestion pipeline.
+
+This is a big milestone. Week three, day four is complete. We’ve built an end-to-end ingest pipeline that takes text, vectorizes it using a SageMaker endpoint, and stores it in an S3-based vector store using Lambda and API Gateway.
+
+Tomorrow, we take this one step further. We’ll add a data source agent that gathers data automatically. This agent will use an MCP server, specifically a Playwright MCP server, to collect data. That data will then be sent to our ingest Lambda function, completing a truly end-to-end data pipeline.
+
+The data engineers among you are probably already thinking about how this could be extended with additional ETL tooling, which we’ll hopefully touch on briefly.
+
+Tomorrow is going to be a big day, and I can’t wait for it. But first, we should celebrate—we’re now 70% of the way through, 70% on the path to production expertise. It feels like just yesterday we were at 20%, and now we’re rapidly approaching the endgame.
+
+But not before one more really meaty day. I’ve got a lot in store for you tomorrow, and I’ll see you then.
+
+# **T) Day 5 - Building AI Research Agents with MCP Servers and Data Pipelines**
+
+I really don’t understand where all the time has gone. How can we already be at day five of week three? But here we are, and we’re at a crucial moment in the course. We have a lot to do today. This is our third purple day in a row, which means it’s full of AI content.
+
+Today, we’re completing the data pipeline side of our Alex Capstone project, and this time we’re going to be using an agent. We’ll be using the OpenAI Agents SDK, and that agent is going to have an MCP server attached to it. Let’s get into it.
+
+And as if you need a reminder of what Alex is, you already know it well by now. Alex is our financial planner, something that could one day become a full SaaS product. So far, we’ve built a SageMaker endpoint that can take text and turn it into vectors. We’ve also built an ingest Lambda function, called ingest, which uses that SageMaker endpoint to vectorize text and store it in S3 Vectors.
+
+What we’re going to do today is create an agent called researcher that’s able to carry out research on its own. This agent will use the OpenAI Agents SDK, and it will also use an MCP server with Playwright to browse the internet, gather information, and then call our ingest Lambda function.
+
+The way we’re going to do this is very similar to how we used MCP servers on days one and two of this week, when we built things in Azure and GCP. In those cases, we used a container-based approach, using the cloud provider’s equivalent of App Runner, to spawn an MCP server inside a container. We’re going to use that same approach today.
+
+This is also a good moment to say a few words about data engineering, which is a topic we’re really only scratching the surface of here. Data engineering by itself could easily be an entire course—or even a series of courses—just like front-end development, Docker, or Terraform, all of which we’ve touched on during this course.
+
+So what is data engineering? At its core, it’s a whole discipline focused on building data pipelines that are robust, reliable, and scalable. And honestly, it’s probably more than that—any data engineer listening might already be thinking of many other aspects I haven’t mentioned.
+
+One of the central concepts in data engineering is ETL, which stands for Extract, Transform, and Load. This is about bringing data in from a source, transforming it into a target representation, and then loading it into a system where models or analytics tools can use it effectively.
+
+Data engineering also often involves using scalable data processing frameworks like Spark or Apache Beam. These frameworks allow you to process massive datasets using distributed computing, perform ETL operations efficiently, retry failed tasks automatically, and handle both batch processing and real-time streaming data.
+
+Another concept that data engineers often work with is the medallion architecture, which is a more enterprise-grade data architecture pattern. In this approach, data exists in three layers. The bronze layer contains raw data exactly as it was ingested. The silver layer contains normalized, cleaned, and standardized data. The gold layer contains data that is fully transformed and ready to be consumed by applications, dashboards, or machine learning models.
+
+This kind of staged approach gives you robustness, traceability, and scalability, and it’s commonly used in large enterprise systems.
+
+The pipelines we’re building in this course are relatively straightforward by comparison. We have an agent acting as the data source. We have an ingest Lambda that transforms the data by vectorizing it. And then we store the final output in S3 Vectors. But you can easily imagine extending this into a more complex pipeline, with multiple Lambda functions handing data off to one another, implementing something like a bronze–silver–gold flow before the data finally lands in a production database.
+
+That should give you a general feel for what data engineering is about. If this area interests you, I’d strongly encourage you to do more research. And if you are a data engineer yourself and have more to add, please feel free to contribute to the Q&A on Udemy and share your perspective on what else belongs in the data engineering profession.
+
+Now, coming back to the architecture we built last time, this is the simplified architecture of what we’re working with. We already have the ingest function that calls SageMaker and stores vectors in S3. It’s the top part of that architecture that we’re focusing on today.
+
+We’re going to introduce a scheduler, something that wakes up every two hours. That scheduler will trigger a Lambda function, which in turn will kick off our researcher service running in App Runner. The researcher will use a frontier model in Amazon Bedrock, and it will then call our ingest Lambda function to store the data it gathers.
+
+This is how everything fits together.
+
+The researcher will be built using the OpenAI Agents SDK. It will have an MCP server, specifically the Playwright MCP server that many of you on this course will remember fondly. All of this will run inside a container. We’ll build that container locally, deploy it to AWS, and once again use Terraform to provision and manage the infrastructure.
+
+And with that, enough talking. Let’s head into the lab and start building this.
+
+# **U) Day 5 - Building AI Research Agents with Bedrock and OpenAI SDK on AWS**
+
+And we’re back in Cursor, and we’re back in Project Alex. We’re going into the guides folder and opening the fourth guide to get this show on the road.
+
+Before starting, make sure you’ve completed guides 1 through 3—we certainly have. Today, we’re going to build the Researcher service, which is an App Runner app that will use the OpenAI Agents SDK to orchestrate agents. It’s going to leverage AWS Bedrock, and we’ll be using a Playwright MCP server to search the internet for a given topic. Once the data is retrieved, we will ingest that topic, convert it into a vector, and store it in S3 Vectors using our ingest service. That’s the plan for today.
+
+But first, we need to request access to the correct Bedrock models. We’ve done this before, but we need to do it again to get access to new models. The model we want to use is the exciting, relatively new open-source model from OpenAI called OSS 120, but there are a couple of catches. First, this model is only available in US West 2 at the moment, so we need to set it up in that region to gain access. Second, there is a recent bug in Bedrock that prevents tool calling on OSS 120. This is slightly tiresome, and while it may be fixed by the time you’re watching this, for now I will use the Nova model, which is working perfectly. I’ll provide code to allow you to switch between OSS 120 and Nova, depending on which one is functional. Of course, you already requested access to Nova in the previous weeks, so that one should be ready to go.
+
+Now, let’s go back to the AWS console. I’ll sign in as root to request access to OSS 120 and Nova models. Since you’re signed in as root as well, this is also a good time to check your billing and cost management to ensure your budget is on track, though we won’t do that again here. Instead, we’ll go straight to Amazon Bedrock.
+
+Once in Bedrock, check the region at the top—mine defaults to US East 1, but we’ll change it to US West 2, where the largest number of models are available. Here you can see the models available, including GPT-based ones and, hopefully, OSS 120. At the bottom left, click Model Access, then Modify Model Access. Scroll down and find OpenAI OSS 120b and request access by ticking the checkbox. Press Next or the equivalent button to submit the request. In my experience, access is approved almost instantly.
+
+At the same time, for your Nova models in US East 1, press Modify Model Access, and make sure Nova Pro, Light, and Micro are checked (unless access is already granted). Then click Next to submit. This ensures you now have access to both Amazon’s Nova models and OSS 120 in their respective regions.
+
+Some quick notes: OSS models are only available in US West 2, but your App Runner service can be in any region, including US East 1. It will connect across regions without issue. If you’re using Nova models in the same region as your App Runner service, that works too. Remember, these are free open-source models, and Bedrock handles the keys for you.
+
+Next, we’ll make a quick change to the .env file. This file already contains the API endpoint and API key from part three. We now need to add your OpenAI API key. Take it from another .env file you may have and replace the placeholder src... with your real OpenAI API key. You may wonder why we need this key if Bedrock already manages keys. The reason is that we’re using the OpenAI Agents SDK to connect to Bedrock. This SDK provides tracing functionality out of the box, and to view those traces in the platform, you must set your OpenAI API key. No money is spent for this; it’s only for logging and tracing purposes.
+
+With that done, we are ready to start building our Terraform infrastructure. Open a terminal and navigate to the Terraform for Researcher directory (Terraform/4). In this directory, you’ll find a Terraform.tf.example file. You’ll need to copy this example file into your TF vars file.
+
+In your TF vars file, you need to set five fields:
+
+AWS Region – This is your default AWS region (not yet the Bedrock region for OSS).
+
+OpenAI API Key – The key you just added to your .env file.
+
+API Endpoint – Take it from your .env file.
+
+API Key – Also from your .env file.
+
+Scheduler Enabled – Leave this as false for now. This will allow us to build infrastructure that can wake up every two hours to run the process. We’ll turn it on at the end to see it in action.
+
+Go ahead and complete these steps in your Terraform configuration. Once that’s done, we’re ready to move on with the build.
+
+# **V) Day 5 - Deploying AI Research Agents with Docker, ECR, and App Runner**
+
+And now it’s our moment: Terraform init. That’s how it always starts. Running terraform init sets up the project, and it will take a bit longer the first time as it pulls in all dependencies and providers.
+
+Things get a little tricky here. Terraform will complain if we try to do everything at once because we need to build a Docker image for our App Runner service, the Researcher, and deploy it to ECR (Elastic Container Registry). This creates a chicken-and-egg problem: we can’t run the full Terraform code to deploy everything because the container doesn’t exist yet, and we can’t create the container until ECR is set up.
+
+The simplest solution is to run a partial Terraform apply, targeting only the resources we need to start with: the ECR repository and the required IAM roles/permissions. If we look at the Terraform code, it contains the usual provider blocks, then a section to set up the ECR repository, which is what we need right now. Ahead of that, we also have IAM setup blocks. The actual App Runner service for the Researcher will be created later, only after the container has been built and pushed to ECR. The Terraform file also has scheduling and additional IAM configurations, but those will come later.
+
+With that context, we run the Terraform apply targeting only the ECR repository and IAM roles. Terraform will do its planning and prompt us to confirm by typing yes. Once we do that, it will create the repository and roles. You may see a warning that says, “Applied changes may be incomplete; this plan was created with a -target option.” This is expected and intentional because we’re only partially deploying the infrastructure. The method to this madness is to allow us to build and deploy the Researcher container next.
+
+Before deploying the container, let’s review the code in backend/researcher. In this directory, there’s a lot going on: a Dockerfile for building the container, context.py, servers.py, a deploy script, and a couple of test scripts. The context.py and servers.py modules separate the agent’s context from the MCP server logic.
+
+The context.py module contains templates and instructions for our agent. This includes the system prompt, defining the agent’s role, and a set of three critical instructions:
+
+Research on the web by navigating sources and using browser snapshots.
+
+Provide a brief analysis.
+
+Save the data to the database using the ingest_financial_document tool, including the current date.
+
+There are additional instructions for speed and conciseness, and the module also defines the research prompts that will be passed in to the agent.
+
+The servers.py module defines the single MCP server we’re using. This is a Playwright MCP server, configured to run headless, use a user agent string to browse the web properly, and work seamlessly both locally and when deployed in AWS. Getting paths and arguments right for this was tricky and required several iterations, but this module now handles it correctly. The MCP server enables our agent to browse the web in a containerized environment and carry out research according to the instructions defined in context.py.
+
+The server.py file itself is where we create the agent and tie everything together. This includes:
+
+Setting up a FastAPI service.
+
+Defining the method run_research_agent to take in a topic.
+
+Selecting the Bedrock region and model for the calls (e.g., Nova or OSS 120 if available).
+
+Using tracing to observe the agent’s operations via OpenAI’s observability framework.
+
+Passing in the context, system prompt, and tool for ingesting financial documents.
+
+Running the MCP server (Playwright) to allow web-based research.
+
+You can experiment with this code by modifying the prompts, changing MCP server configurations, or adding more servers. This is a great way to explore how the agent behaves with different instructions or resources.
+
+Next up is the Dockerfile, which defines how the Docker image is built. It installs Node.js, Playwright, Chromium, Uvicorn, and finally launches the FastAPI server defined in server.py on port 8000. The Dockerfile ensures the correct platform and dependencies are in place for the container to run properly in AWS App Runner.
+
+Finally, we have deploy.py, which manages the deployment of this container. This script is similar in concept to the shell or PowerShell scripts we’ve used in previous weeks, but here it’s fully Python-based. It performs several tasks:
+
+Determines the ECR repository URL from Terraform outputs.
+
+Logs in to ECR.
+
+Builds the Docker image using docker build --platform.
+
+Pushes the Docker image to ECR.
+
+Once the image is in ECR, we’ll be able to run the full Terraform apply to deploy the App Runner service and have our Researcher agent fully operational. This script ensures the Docker container is ready and properly uploaded before attempting deployment.
+
+# **W) Day 5 - Testing End-to-End AI Agent Workflows from Research to Vector Storage**
+
+To run the deploy script that we just looked at, we first navigate to the backend researcher directory using cd backend/researcher. Once there, we run uv run deploy.py to kick off the deployment process. The script immediately retrieves the AWS account details and then locates the ECR URL. The process is quick, so it’s easy to miss the steps, but if we scroll up in the terminal, we can see it running the Docker build using the Dockerfile we examined earlier. This includes installing Node.js, pip, Uvicorn, Playwright, and Chromium. Any warnings during this process can be safely ignored. After building the container, the script pushes it to ECR, and we wait until this process completes successfully before moving on to the full Terraform deployment.
+
+Once the container is successfully pushed, we proceed to the final step: a full Terraform apply. Open a new terminal, navigate to the Terraform directory as instructed, and run terraform apply without restricting targets. This deploys everything we defined in the Terraform files. The deployment may take several minutes; in my experience, it took almost eight minutes to complete. At the end, Terraform provides the URL of our new App Runner service, confirming the deployment was successful. With the service live, we’re ready to test the entire research-to-ingest-to-search pipeline.
+
+Before testing, we ensure the S3 vector store is empty. Navigate to the backend ingest directory and run uv run cleanup_s3_vectors. This deletes all existing vectors in the database, making sure we start with a clean slate. Running it confirms that the database is empty, either by reporting “Successfully deleted” or “No vectors found. Database is already empty.”
+
+Now comes the moment of truth: testing the Researcher agent. Navigate back to the researcher directory and run uv run test_research.py. The script retrieves the App Runner service URL, verifies its health, and instructs the agent to generate research on a trending topic. Using the Nova model (or OSS 120 if available), the agent spawns an MCP server, launches a Playwright browser, navigates web pages, and collects information. The agent then uses a tool to call the ingest function, storing the collected data in our S3 vectors vector store.
+
+During testing, this process may take longer than the estimated 20–30 seconds. Using Nova is a bit hit or miss; sometimes it fails with timeouts or tool-calling errors. In my case, the first run failed with a bad gateway timeout, but a second run completed successfully. Using OSS 120 or a larger model like Claude would likely result in more consistent results. Once the agent completes its work, we can verify the stored vectors.
+
+To confirm, go back to the backend ingest directory and run uv run test_search_s3_vectors. Since the S3 vector store was empty initially, any results now reflect what the agent just ingested. We should see new entries corresponding to the research topics gathered by the agent. This demonstrates that the Researcher agent successfully retrieved information, transformed it into vectors via the ingest function, and stored it in our knowledge base.
+
+For a deeper view of what happened behind the scenes, you can explore the traces in OpenAI’s platform. Go to openai.com, navigate to Logs → Traces, and review the latest runs. The traces show the agent’s steps, including browser_navigate, browser_click, browser_handle_dialog, snapshots, and finally calls to the Ingest Financial Document tool. This provides a detailed picture of how the agent used its MCP server to browse the web, collect information, and save it in the S3 vector store.
+
+While experimenting, you could refine prompts to limit the agent’s browsing, perhaps instructing it to visit only one page or follow a tighter workflow. This testing gives a clear view of the full pipeline, showing how the Researcher agent integrates MCP tooling, web research, ingestion, and vector storage into a functioning end-to-end process.
+
+# **X) Day 5 - Automating AI Agent Workflows with AWS EventBridge Scheduling**
+
+Hopefully, by now, you’re feeling pretty satisfied with how everything is holding together. We have a sophisticated data pipeline in action, and you should be able to see it working and understand the flow. There are additional tests you could perform, such as checking the health routes or running more specific scenarios, but now we’re going to make the pipeline just one step more advanced.
+
+To illustrate this, we refer to the architecture diagram found in the guides folder. This is a more granular version of the simple architecture we looked at before, showing all the different components. We are going to set up an EventBridge scheduler, which is an AWS service that can trigger events based on schedules—essentially a managed cron job. In our setup, it will run every two hours and trigger a lambda function called Alex Scheduler. The lambda’s only job is to call research_auto, which kicks off our App Runner service that runs the agent.
+
+The agent will continue the flow we built: it calls App Runner, which runs our agent using Bedrock (ideally OSS 120) or another supported model like Nova. The agent will call the API Gateway with a private API key for security, perform its research, and then call the lambda ingest function. The ingest function vectorizes the data using SageMaker and stores it in S3 vectors. With this final piece in place, the architecture diagram should now make complete sense, showing all components from the scheduled trigger down to the vector storage.
+
+To enable this automated research, open the terraform.tfvars file in the for_researcher Terraform directory. Locate the last line, which reads scheduler_enabled = false, and change it to true. Once this change is made, run terraform apply again. Terraform will read the updated configuration and create the EventBridge scheduler and related IAM roles. The scheduler is now set to trigger every two hours, calling the lambda function to start the research flow automatically. At this point, you can leave it running and check back later to see the traces of the automated runs.
+
+For a more immediate demonstration, I temporarily changed my schedule to run every ten minutes. In OpenAI’s platform under Logs → Traces, we can see that every ten minutes, the researcher agent executes. Each trace shows the agent using its MCP server, navigating web pages, interacting with content, and finally calling the tool ingest_financial_document to send the data into our ingestion pipeline. This provides real-time evidence of the pipeline working in the wild.
+
+To verify that documents are being stored correctly, navigate to the backend ingest directory and run the test search script, uv test_search. You should see multiple vectors now in the index, reflecting the data collected by the agent. The results include several entries for each search, demonstrating that the automated research is successfully ingesting content into the vector store.
+
+Finally, you can check everything in the AWS Console. Go to App Runner and find the researcher service. You can view the deployment details and inspect CloudWatch logs, which stream all messages from the agent. The logs show the agent’s activity, including navigation steps, tool calls, and any errors such as max turns exceeded or delays caused by slow web pages. These logs, together with the OpenAI traces, give you full visibility into how the agent operates in production.
+
+With the EventBridge scheduler active, automated research is running, data is being ingested regularly, and the pipeline—from App Runner, Bedrock, and lambda functions to SageMaker vector storage—is fully operational. This demonstrates a production-grade data ingest pipeline using agents, MCP servers, lambda functions, and App Runner, and provides a clear framework for extending this setup to additional scenarios where automated data collection and processing are required.
+
+# **Y) Day 5 - Week 3 Wrap-Up: Assignment Options & Production AI Next Steps**
+
+At this point, I want to introduce your assignment for the end of week three. This is an important one, focused on making what we’ve built more resilient, bulletproof, and richer in functionality. I’m suggesting three possible directions for your assignment, but you can also combine them or take your own approach.
+
+The first direction is to go deeper into Agentic AI. For example, you could add more MCP servers to your setup. If you’ve taken my Agentic AI course, you could add a polygon server so the researcher can check current stock prices, or, if you’re on a paid plan, collect financial documents associated with companies. You could also explore context engineering, which goes beyond prompt engineering, thinking carefully about all the information provided in context to keep the agent on track and delivering high-quality outcomes. Additionally, you could add to-do list functionality, allowing the agent to plan research steps and execute them sequentially. Consider emulating tools like Claude Code to give your agent more autonomy and sophistication.
+
+The second direction is to focus on platform engineering and DevOps. You could incorporate additional AWS services to make the platform more resilient. For example, using SQS could add a robust task management system around the research and ingest process. If a task fails—perhaps because the MCP server crashes or Playwright times out—the task could automatically be retried. This type of work enhances the bulletproofing of your deployment architecture and ensures reliable operation even when components occasionally fail.
+
+The third direction is to explore the data engineering side. Currently, data from the researcher flows directly into our ingest pipeline. You could map it into a standardized format and store it in an external database, such as Supabase. By signing up for a free Supabase account and using an API key, you could write a serverless function (Lambda) that takes the ingested data and writes it to Supabase. For a more challenging stretch, you could implement this using App Runner and an MCP server, further integrating your agent with external data storage and transformation pipelines.
+
+This assignment is an opportunity to be creative. Think of new ways to enhance the pipeline, improve agent intelligence, strengthen the platform, or enrich your data handling. The best way to learn is by building it yourself, not just watching or listening. When you succeed, please share your work. You can post on LinkedIn and tag me, or submit a pull request to the community contributions folder in the repository. Include a Python notebook with a brief description and screenshots if you like, so that other students can learn from your example.
+
+As a final reminder, please check your AWS console billing and cost management. If you’re using a free plan, ensure you’re comfortable with resource usage. If your agent is running every two hours, understand the costs and adjust if necessary. You can change the scheduler to false in your Terraform file and run terraform apply to pause it, or do a full terraform destroy if you don’t want the infrastructure running. If you leave it running, it will continue building up knowledge, getting more sophisticated over time, which will be very useful when we build the full Agentic AI platform next week.
+
+It’s been a grueling but rewarding week. We started with the cybersecurity project and deployments on Azure and GCP, and then focused on the data ingest pipeline, the researcher agent, MCP servers, and vector storage. We’ve built an enterprise-grade ingest pipeline with robust API controls via API Gateway, including key management, scaling, and throttling. Every two hours, the agent is running, data is flowing, and vectors are being stored. This is production-level architecture, capable of large-scale data ingestion and ready to be extended with additional APIs or integrations.
+
+At this point, I’m proud to say: 75% of week three is complete. We’ve covered SageMaker and Bedrock, deployed MCP servers on multiple clouds, and achieved so much. Next week, we enter the final stretch, building a complete Agentic AI platform with multiple agents, many Lambda functions, and a complex architecture that will pull together everything we’ve learned. Make sure to get plenty of rest, because the next week will involve heavy lifting and advanced building. This is the final 25% toward becoming an expert in generative AI and Agentic AI deployed to production.
