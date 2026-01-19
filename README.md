@@ -184,6 +184,20 @@ AI Engineer MLOps Track: Deploy Gen AI & Agentic AI at Scale (Older Name - AI in
 
 **Y) Day 5 - Week 3 Wrap-Up: Assignment Options & Production AI Next Steps**
 
+**IV) Section 4: Week 4**
+
+**A) Day 1 - Multi-Agent vs Single-Agent Architectures for Production AI Systems**
+
+**B) Day 1 - Building Multi-Agent Financial AI: Database Architecture & AWS Setup**
+
+**C) Day 1 - Database Architecture for Production AI: Aurora Serverless for LLM Apps**
+
+**D) Day 1 - Setting Up Aurora Serverless Database for Multi-Agent AI Systems**
+
+**E) Day 1 - Setting Up Aurora Database Infrastructure for Production AI Apps**
+
+**F) Day 1 - Setting Up Production Database Architecture for AI Agent Systems**
+
 
 
 # **A) Day 1 - Instant AI Deployment: Your First Production App on Vercel in Minutes**
@@ -3591,3 +3605,352 @@ As a final reminder, please check your AWS console billing and cost management. 
 It’s been a grueling but rewarding week. We started with the cybersecurity project and deployments on Azure and GCP, and then focused on the data ingest pipeline, the researcher agent, MCP servers, and vector storage. We’ve built an enterprise-grade ingest pipeline with robust API controls via API Gateway, including key management, scaling, and throttling. Every two hours, the agent is running, data is flowing, and vectors are being stored. This is production-level architecture, capable of large-scale data ingestion and ready to be extended with additional APIs or integrations.
 
 At this point, I’m proud to say: 75% of week three is complete. We’ve covered SageMaker and Bedrock, deployed MCP servers on multiple clouds, and achieved so much. Next week, we enter the final stretch, building a complete Agentic AI platform with multiple agents, many Lambda functions, and a complex architecture that will pull together everything we’ve learned. Make sure to get plenty of rest, because the next week will involve heavy lifting and advanced building. This is the final 25% toward becoming an expert in generative AI and Agentic AI deployed to production.
+
+# **IV) Section 4: Week 4**
+
+# **A) Day 1 - Multi-Agent vs Single-Agent Architectures for Production AI Systems**
+
+I don’t use the word humongous very often, but in this case, it’s absolutely fitting. This is a humongous week with a humongous project, and I genuinely can’t wait to get started. So let’s get going.
+
+The three big words for this week are agents, scale, and enterprise. We’re going to be doing a fair bit of all three.
+
+Over the five days, here’s what I have in store for you. You’ll notice a lot of purple in the plan, because we’re going to be doing a lot of AI. You’ll also see some blue, because we’re going to be spending significant time building the capstone project.
+
+Today is going to be about talking through the multi-agent architecture. Then we’ll move into working on the capstone projects themselves—most of the backend logic first, followed by the frontend. After that, we’ll talk about enterprise characteristics such as observability, monitoring, security, scalability, and APIs. Finally, we’ll wrap up by discussing agentic AI platforms and comparing them with what we’ve already built ourselves.
+
+There’s a lot to do.
+
+I’m going to start by talking about architectures for agentic projects.
+
+One thing I often push back on is when people jump too quickly into architecture. I see this a lot, particularly in the field of agentic AI. When you’re working on business problems, it’s extremely important to start by focusing on the commercial problem itself. You need to understand the problem you’re solving, understand how you will measure success, and think about agents first and foremost as large language models with prompts that you engineer.
+
+Those prompts—and the way you design them—should drive what kind of agent architecture you end up using.
+
+That said, let’s assume you’ve already done that work. You understand your problem, you know what kind of solution you need to build, and now you’re asking yourself: How do I build the right kind of agent architecture to solve this problem effectively?
+
+Let’s talk about that.
+
+To begin with, I want to either remind you—if you already know this—or explain some of the terminology around agent architectures. This area is still somewhat ambiguous. There aren’t strict standards yet, because agentic AI is new and evolving, and people often use emerging terms in different ways.
+
+Anthropic wrote a phenomenal and seminal blog post that laid out some important distinctions. In that post, they differentiate between workflows and agents.
+
+Workflows are systems where models and tools are orchestrated through strict, predefined code paths. For example, you might say: call this LLM, then call that LLM, then call a tool. Everything is explicitly defined in code.
+
+Agents, on the other hand, are systems where the LLM itself decides which processes should be called, when they should be called, and how the flow should be orchestrated.
+
+In that seminal Anthropic post, they also cover a number of common agent design patterns. However, since that post was published, something new has emerged. Even when we’re talking about agents—systems where LLMs control the flow—we now see two distinct architectural styles.
+
+Let’s look at those.
+
+The first is what’s commonly called a multi-agent architecture. In this setup, you have a central agent—often referred to as a planner or orchestrator. This agent is responsible for deciding which other agents should be called and under what circumstances.
+
+It orchestrates calls to multiple agents, each of which is built with its own context and prompts that precisely frame the specific problem that agent is responsible for solving. Each agent has a well-defined role, and the planner coordinates how they work together.
+
+The second architectural style goes by various names, but if you hear someone say “single agent with an agentic loop”, people generally understand what that means.
+
+In this approach, there is only one LLM, typically with a long and fairly detailed system prompt. That prompt enables the agent to do things like maintain a to-do list, reason about the task, and then tick off items one by one. The system runs in a loop, where the agent repeatedly comes back to itself until it determines that the task has been fully completed.
+
+This is why it’s called a single agent with a loop.
+
+If you’ve had experience working with Claude Code—and I hope you have, because it’s fantastic—you’ll have felt this firsthand. You interact with one agent that manages its own workflow, figures out what to do next, and repeatedly reasons through the problem by calling itself in a loop.
+
+Interestingly, Claude Code is also a good example of why these categories aren’t perfectly clean. You might be thinking, “Hang on, you missed something—Claude Code can actually configure different agents that the main looping agent can call.”
+
+And you’d be absolutely right.
+
+This highlights the fact that these two patterns represent extremes, but real systems often sit somewhere in the middle. You can have a single agent with a loop that still calls out to specialized sub-agents. Likewise, you can have a multi-agent architecture where the planner agent has a lot of autonomy, repeatedly calling the same worker agent multiple times—effectively introducing a loop there as well.
+
+So it’s not a strict binary choice between multi-agent and single-agent-with-loop. Multi-agent systems can have loops, and single-agent systems can delegate work. But thinking in terms of these two styles helps you understand the design space and the kinds of patterns you can apply.
+
+At this point, you might be thinking: Okay, fair enough. There are different patterns, and there’s a spectrum between them. But how do we know which one to choose for a given problem?
+
+As is often the case, the answer is that there are no fixed rules.
+
+As I mention in Guide 12 in the guides folder of the production repository, this is something you need to approach experimentally. You start with your business problem, define your potential solution, and—crucially—decide how you will measure performance.
+
+Once you have a clear metric, you can try different agent architectures and empirically determine which one performs best for your specific use case.
+
+The key to doing this successfully is to start simple.
+
+Begin with the simplest approach possible. Typically, that means one agent and not even an agentic loop—just a single LLM call. Start there. If that works, great.
+
+If the performance isn’t where you want it to be—if you’re not meeting the bar you set for success—then you gradually increase complexity. You might break out specific responsibilities into separate agents, add more business logic, or introduce loops where they genuinely add value.
+
+That’s always the trick: start simple, measure performance, and only add complexity when you have a clear reason to do so.
+
+# **B) Day 1 - Building Multi-Agent Financial AI: Database Architecture & AWS Setup**
+
+At this point, I’m thrilled to bring back Alex, the financial planner—our capstone project that we originally started in week three, day three. We’re going to continue working on it throughout this week.
+
+This time, we’ll be building it using a multi-agent architecture. And I’ll admit upfront that I’m not going to be following my own rules here. I won’t be starting simple and then gradually adding more agents as we go. Instead, we’re going to jump straight into a multi-agent setup. You’ll have to take a leap of faith and assume that I’ve already tried this with a single call and determined that a multi-agent approach is more effective for this problem.
+
+So, what exactly is Alex?
+
+Alex is a SaaS application, a subscription-based platform that gives users access to an AI-powered financial planner. Users can enter details about their accounts—such as brokerage accounts, stocks, and other financial instruments—and receive insights on things like concentration risk, portfolio diversification, and retirement planning. In short, it’s an AI-based financial advisor.
+
+Last week, we built the research flow for this system. We created a research agent and implemented data ingestion pipelines that could pull data from the web using an SMTP-based process. That data was then converted into vectors, stored in S3 vector storage, and used to power our research capabilities.
+
+Hopefully, that system has been running for you—spinning up every couple of hours. You should be able to see it in the AWS console if you take a look. Of course, you might have shut it down if you didn’t want to incur the cost, which is perfectly fine. Either way, that foundational piece is now built.
+
+What we’re going to do this week is build out the main agentic flow for the product itself.
+
+On day one, which is today, we’ll focus on building the database layer. On day two, we’ll build out five different agents that will collaborate to function as the financial planner. On day three, we’ll build the application itself—mostly the frontend, but also the API layer. On day four, we’ll focus on making the system enterprise-grade and production-ready, covering topics like security, resiliency, scalability, and, very importantly, observability.
+
+All of that is coming up.
+
+Before we dive into what we’re building this week, let’s briefly remind ourselves of what we built last week. This is what the architecture looked like. You’ll remember the scheduler that triggered the researcher, which then called the ingest pipelines and stored the data in S3. We used Bedrock and SageMaker as part of that setup.
+
+So what are we doing this week?
+
+We’re going to implement a multi-agent architecture, and this is what it’s going to look like.
+
+At the center, we’ll have a planner agent, also referred to as an orchestrator. This agent is responsible for coordinating activity across four additional agents, making a total of five agents. These agents are called the Tagger, the Reporter, the Charter, and the Retirement agent.
+
+Each agent has been designed with distinct commercial functionality. In theory, each one could be built, tested, evaluated, and improved independently. You could work on the prompts and context for each agent separately. This is a good general rule of thumb when designing agent systems: organize agents so their performance can be evaluated independently, allowing them to be developed and deployed in a loosely coupled way.
+
+The Planner agent handles orchestration.
+The Tagger agent has very specific functionality—it takes a financial instrument, such as a stock, and determines things like geographic distribution and asset class exposure. For example, it identifies whether an instrument represents equities, fixed income, or commodities. These are the kinds of attributes that financial planners care deeply about, and the Tagger stores this information in the database.
+
+The Reporter agent is the main financial planning agent. It builds a comprehensive report of the user’s portfolio, analyzing factors such as diversification and concentration risk.
+
+The Charter agent is a bit of fun. Its sole responsibility is to generate visualizations—charts and graphics that depict the portfolio in different ways.
+
+The Retirement agent focuses exclusively on retirement planning. You can think of it as a separate team member that evaluates whether someone is planning adequately for retirement, based on all the financial data and AI analysis available.
+
+Together, this forms our agent orchestra—multiple LLM calls coordinated to solve a real business problem.
+
+This is also a good moment to point out a red flag that I often see when discussing agent architectures with students and teams. It’s the tendency to over-anthropomorphize agents—a trap I’m admittedly flirting with here by talking about “agent teams” and “team members.”
+
+While this language feels natural, it can be misleading. At the end of the day, these are LLM calls. What truly matters is the context provided to each call: the system prompt, the information supplied, and the framing of the task.
+
+To get the best results from an agentic system, you should think carefully about how you organize and deliver context so that each task gets optimal performance. When done well, this can look like having human-like roles such as a retirement planner—but that should be the outcome, not the starting point.
+
+The right approach is to begin with the business problem and the performance metrics. Start with a single LLM call. If you notice that, for example, retirement analysis is weak or inconsistent, that’s when you measure it, isolate it, and potentially split it into a separate agent with more targeted context and examples.
+
+The wrong approach is to begin by designing a “human-like team” and then building agents to match those roles. That mindset is tempting, but you should resist it. Act like a data scientist first. Solve the business problem in a measured, empirical way. If the best solution ends up resembling a human team, that’s fine—but let the data drive you there.
+
+So that’s our agent architecture.
+
+Now let’s look at the deployment architecture—how this system will actually run in production.
+
+Each agent will be implemented as a Lambda serverless function, which is a very common pattern for agentic systems. Sometimes agents are deployed using App Runner, especially if they need to spawn MCP servers, but we won’t need that here. All agents will use Amazon Bedrock to make frontier model calls.
+
+For persistence, we’ll use Aurora Serverless v2, which I’ll introduce in more detail shortly.
+
+In addition to the agent infrastructure, we’ll need supporting components to interact with the system.
+
+We’ll build a frontend—just like we did back in week two, which now feels like a long time ago. It will be a static website generated from a Next.js frontend, hosted in an S3 bucket, and distributed globally using CloudFront.
+
+This frontend will make API calls through API Gateway to a backend API, which will itself be another Lambda-based serverless service.
+
+That backend API will submit requests to the planner agent using a new AWS building block for us this week: SQS, the queuing system. SQS will play an important role in coordinating and scaling agent requests.
+
+There’s also quite a bit of AWS infrastructure that isn’t shown explicitly in the diagram but comes along for the ride—things like API Gateway, Secrets Manager for securely storing secrets, and other supporting services.
+
+This is intentionally a high-level diagram meant to give you a sense of the overall landscape. Take a moment to really look at it and absorb what we’re about to build. Having this mental model will make everything that follows click much more easily.
+
+Once you’ve taken that in, we’ll be ready to get started.
+
+But just before we do, I want to talk to you about databases.
+
+# **C) Day 1 - Database Architecture for Production AI: Aurora Serverless for LLM Apps**
+
+I’m going to give you a surface-level briefing on databases in AWS. This is one of those topics that can quickly turn into a rabbit hole if you want it to, but for now we’ll keep things intentionally high level.
+
+To start, let’s define three key terms that we’ll be working with.
+
+The first term is RDS, which stands for Amazon Relational Database Service. RDS is a managed service provided by AWS. You can think of it as an umbrella under which you can run different relational database engines. For example, RDS can run MySQL, PostgreSQL, and other relational databases. AWS handles things like standing up the database, managing the cluster, and much of the operational overhead for you.
+
+That’s the first concept: RDS.
+
+The second term is Aurora. Aurora is one of the database engines that you can run under the RDS umbrella. In other words, when you use RDS, you can choose MySQL, PostgreSQL, or Aurora as the underlying engine.
+
+Aurora is Amazon’s own proprietary relational database, designed and built by AWS to be fast, scalable, and highly reliable. It’s optimized specifically for cloud workloads and is deeply integrated with the AWS ecosystem.
+
+The third term is Aurora Serverless, or more specifically Aurora Serverless v2, which is the latest version and the one we’ll be using. Aurora Serverless v2 is a flexible, elastic, serverless version of Aurora. It automatically scales up or down based on demand, responding quickly when more capacity is needed.
+
+This makes it an excellent choice for startups, because it starts small and follows a pay-as-you-go model. At the same time, it’s also great for enterprise use cases, because if demand suddenly spikes, it can scale automatically without downtime. This is why Aurora Serverless v2 fits so well into a serverless-style architecture.
+
+It’s important to note that AWS offers a whole zoo of other database platforms as well.
+
+For example, you’ve almost certainly heard of DynamoDB. DynamoDB is Amazon’s primary NoSQL database offering. If you don’t want a relational database and instead want a NoSQL model, DynamoDB is often the go-to choice.
+
+DynamoDB is different from the relational world because there’s no RDS equivalent sitting on top of it. DynamoDB is both the managed service and the database itself. You don’t choose an engine underneath it the way you do with RDS.
+
+There are other NoSQL options too. DocumentDB is a MongoDB-style NoSQL database. ElastiCache is used for in-memory data stores like Redis. There are several others as well, and I’ve included more examples in the lab materials.
+
+You can always explore further by reading AWS documentation or Googling the different database offerings Amazon provides.
+
+But for our purposes in this project, Aurora Serverless v2 is more than sufficient. It works well for small-scale systems and scales seamlessly to large-scale, enterprise-level workloads, making it a very strong fit for what we’re building.
+
+# **D) Day 1 - Setting Up Aurora Serverless Database for Multi-Agent AI Systems**
+
+And it’s great to be back in Cursor.
+
+Here we are in the Alex project. The first thing I’m going to do is open the guides folder, where you’ll see a number of different guides. Today, we’re going to focus on Guide 5, which is the guide covering the database and shared infrastructure.
+
+I right-click the guide and open the preview so we can read through the instructions for today. This guide is all about building our database and shared infrastructure.
+
+It starts with a section titled Why Aurora Serverless v2, and there’s a fair amount of background information there. It also mentions a few other AWS database offerings that I didn’t cover earlier, such as Neptune, which is a graph database. I believe I already mentioned DocumentDB, and you’ll also see Timestream, which is AWS’s time-series database. This section explains why, for this project, we’ve chosen Aurora Serverless v2.
+
+After that, there’s a diagram showing the architecture we’re about to build. You may need to install a plugin in Cursor to view this diagram properly—I think I mentioned that last week. The diagram shows a user interacting through API Gateway, which calls an API Lambda, and then we have four agents plus a financial planner agent that orchestrates them. All of these agents use Aurora as their shared database.
+
+Next, there’s a prerequisites section reminding you to make sure you’ve completed steps one through four, which we already did earlier. It’s probably worth mentioning here that what we built last week—the data ingest pipeline—is somewhat of a separate project. It does help educate and enrich the agent framework, but it’s not strictly required.
+
+If you shut that pipeline down because you didn’t want to keep paying for it, that’s absolutely fine. You can proceed with this week’s work without it. If you do have it running and constantly updating vectors in S3, then your agent framework will be more knowledgeable and have deeper financial expertise—but again, it’s optional.
+
+As is so often the case, our work begins with IAM, because everything in AWS starts there.
+
+We need to log into the AWS console as the root user. This is also a very good moment to check your costs—always do that. Once logged in, we navigate to IAM, then go to Policies, create a new policy, click on the JSON tab, and paste in the rather long policy definition provided in the guide.
+
+After that, we click Next, save the policy, and give it the appropriate name. Let’s go ahead and do that.
+
+I select the entire policy from the guide, then switch to the AWS console. I double-check that I’m logged in as the root user—you can see my name at the top. This is also a good moment to go to Billing and Cost Management to see what’s been happening with spending. I’ve personally been spending quite a bit building this course, and I hope you’re grateful—but you should absolutely be monitoring your own budget carefully so you don’t do the same.
+
+Next, I go to IAM, which is where all access and security management happens. On the left, I click Policies, and then I locate the policy I’ve already created called Alex RDS Policy. I open it up so you can see it.
+
+As you can see, this policy is simply the JSON we pasted in earlier. This is the custom RDS policy required for Alex. Make sure you save it, and confirm that you can come back later and see it listed just like this.
+
+Following the guide, the next step is to go to User Groups and find the group called Alex Access, which we set up previously. Inside that group, go to Permissions, then add permissions and attach policies. Here, you attach the Alex RDS policy you just created.
+
+There are also several other policies listed in the guide that you need to attach. You may already have done this if you followed along back in week three, when I showed you this list and mentioned you could get a head start by adding them early. If not, now is the time to do it.
+
+You’ll use the slightly janky AWS interface where you have to check each policy individually, and it’s not always clear whether it remembers what you’ve already selected. Once you’ve added everything, save it using the button in the bottom right.
+
+When you return to the permissions view, you should see the full list of attached policies, matching what’s shown in the guide. At that point, we’re good to go.
+
+Now we’re back in Cursor, and the next step is to verify permissions. The guide reminds us to sign out and sign back in as our IAM user, so that we’re never operating as root unnecessarily.
+
+Once logged back in as the IAM user, we open a new Cursor terminal. In the terminal, we run:
+
+aws rds describe-db-clusters
+
+Since we haven’t created any database clusters yet, this should return an empty list, which is exactly what we want. If we see a standard informational message indicating that arguments are required, that tells us something important—we do, in fact, have permission to run RDS data API commands.
+
+This confirms that our RDS permissions are set correctly.
+
+Now it’s time to deploy our serverless database.
+
+One of the really nice things about how this course is structured—with separate Terraform directories for each day—is that we can add new infrastructure incrementally without touching what we’ve already built.
+
+From the Alex project directory, I navigate into the Terraform directory. I do this directory by directory—this command is shown using macOS syntax, but if you’re on Windows, you’ll need to use backslashes instead.
+
+Inside Terraform, I go into the five_database directory. You’ll see a file called terraform.tf.example. I open it to show you what’s inside. It defines things like the AWS region, minimum capacity, and maximum capacity. In general, you should leave most of this as-is.
+
+The next step is to copy this file and rename the copy to terraform.tfvars. This is your real configuration file. Even though this particular file doesn’t contain many sensitive values, it’s still good practice to follow this pattern.
+
+Once you’ve created terraform.tfvars, edit it and set the AWS region to match yours. For me, that’s us-east-1. Leave the capacity values unchanged.
+
+At this point, it’s worth mentioning the cost estimate. With these settings, the estimate is about $43 per month. That might sound high, but remember—you can destroy this infrastructure whenever you’re not using it. You can spin it up only when you’re working, then tear it down using terraform destroy. That way, you’ll only spend a few dollars.
+
+You may also have AWS credits, depending on how your account was created, so the cost could be minimal or even zero.
+
+Now we’re ready to run the Terraform commands.
+
+I’m inside the five_database Terraform directory, and I’ve created my terraform.tfvars file. The first command to run is:
+
+terraform init
+
+For me, this runs very quickly because I’ve done it before. For you, it might take a minute or two while Terraform sets up state and downloads providers.
+
+Before applying the infrastructure, though, it’s worth quickly looking at main.tf, which defines everything we’re about to deploy.
+
+The file starts with provider configuration, as usual. Then there’s logic to generate a random password, which gets stored securely in AWS Secrets Manager for the database credentials. There’s also default networking configuration so we don’t need to worry about VPC setup manually.
+
+You’ll see security group configuration for Aurora, scaling configuration using the minimum and maximum capacity values, and the use of the generated password. There are also settings for backups and maintenance windows—this is a great example of what enterprise-grade infrastructure looks like, with things like automated backups built in by default.
+
+Further down, you’ll see the RDS cluster instance configuration, including the Aurora engine and version, and finally some IAM configuration to ensure everything has the permissions it needs.
+
+That’s our Terraform infrastructure.
+
+Now we’re ready to deploy it.
+
+I run:
+
+terraform apply
+
+Terraform takes a moment to calculate the plan and shows me what it’s going to create. It asks for confirmation, I type yes, and off it goes—creating the Aurora Serverless cluster and all the associated infrastructure.
+
+This process takes a few minutes, so I’ll let it do its thing.
+
+# **E) Day 1 - Setting Up Aurora Database Infrastructure for Production AI Apps**
+
+Welcome back. The Aurora database cluster creation can take some time. For me, it took around seven minutes, but for you it might take closer to fifteen minutes, so you may have to wait a bit. Once it’s finished, you should now be the proud owner of your very own Aurora database cluster.
+
+Now there is a super important step, and you really need to pay attention here. If you mess this up, it can cause serious trouble later, so don’t rush it. What we need to do at this point is add a couple of variables from the Terraform output into our .env file. These variables are going to be used in various places throughout the project, so you must be careful.
+
+What I’m showing here is the output from Terraform once it has completed successfully. You’ll see a message that says something like “Apply complete! Resources: 11 added.” Below that are several outputs, including the cluster ARN (Amazon Resource Name), the database endpoint, and a secret ARN, which points to a secret stored in AWS Secrets Manager.
+
+If you scroll down further in the Terraform output, you’ll see a section that explicitly says “Add the following to your env file.” There are two rows shown there. One includes a secret that contains your Amazon account number, and the other includes credentials-related details. What you must do is take those two rows exactly as they are, copy them, and paste them into the .env file located in your project root directory.
+
+I’m not going to click on the .env file on screen, because that would reveal my secrets, but you should absolutely click on it yourself. Paste those two lines into the file and make sure you save it. You must press Command + S on macOS or Control + S on Windows or Linux to save the file. As Terraform warns, copy these values very carefully. Once that is done, we can move on.
+
+The next thing we’re going to do is test our new database. To do this, open a new terminal window. You can use the one you already have open if you want, but make sure you’re back in your project’s root directory.
+
+From the root, navigate into the backend folder by running cd backend. Inside that, go into the database subdirectory using cd database. At this point, you should be inside the database directory.
+
+This directory is a UV project, so we’ll use uv run to execute commands. We’re going to run uv run test_data_api. This command will attempt to connect to the new Aurora database and verify that it exists.
+
+When it runs successfully, you’ll see output indicating that the database is reachable. It will also tell you that no tables were found, which is expected at this stage. The database is empty, roughly seven megabytes in size, and contains no schema yet. This confirms that we do indeed have an Aurora database and that we can connect to it using the Test Data API.
+
+At this point, you might be wondering what the Test Data API actually does, and what tables we’re about to create. This is where I’ll ask you to take a bit of a leap of faith over the next few days. There’s a lot to cover, and my main focus is going to be on deployment and what it takes to push this system into production.
+
+The code itself is less about writing software from scratch, because that’s something we cover in other courses. I’m also assuming that database coding is something you’re reasonably comfortable with already, or at least something you can explore on your own if needed.
+
+That said, you’re absolutely welcome to explore the database directory. You can look at the Test Data API class itself and see that it’s essentially a script that performs various checks and tests. It uses the AWS RDS client and calls methods like describe_db_clusters, similar to what we’ve done manually before. You can read through the code to see exactly how standard AWS APIs are invoked programmatically.
+
+More importantly, inside the src directory, you’ll find the actual database code we’ll be using. This includes the schema definitions, which describe the data model for the application. You can see the different data types, how tables are structured, and how the schemas are set up.
+
+This is all fairly standard, boilerplate Python database code. A large portion of it was written using Claude Code under my direction. I would write a specification, have Claude generate the code, then review and refine it. For tasks like defining database tables and schemas, it’s extremely fast and effective.
+
+You could generate similar code yourself using tools like Cursor or Claude Code, or you could write it manually if you’re already comfortable designing database schemas. The current codebase is probably around 60% generated by Claude and 40% written or modified by me. Again, this isn’t the main focus of the course—the focus is on deploying this system.
+
+Now we’re ready to actually set up the database. The next step is to run the database migration script, which will create all the necessary tables and structures in Aurora. You can inspect the migration class if you want to see exactly what it does.
+
+From the database directory, run uv run migrations.py. This will execute a series of setup and migration steps. When it completes, you should see output indicating that all migrations were successful—for example, 17 successful migrations, zero errors, and confirmation that all migrations completed successfully. At this point, the database schema is fully set up.
+
+Next, we’re going to populate the tables with reference data. In particular, there is an instruments table that we want to fill with popular ETFs—exchange-traded funds that many people recognize and commonly hold, such as SPY.
+
+To load this reference data, run uv run seed_data.py. You can watch the script as it runs and inserts data. When it finishes, you should see output confirming that around 22 instruments were created and that the seed data was loaded successfully.
+
+Finally, we’re going to set up some test data that we’ll be using over the next few days. This includes creating a fake user and generating some sample data that represents what that user might have in their account. This test data will make it easier to demonstrate and validate functionality as we continue.
+
+At this point, your Aurora database is fully connected, migrated, and populated with both reference data and test data, and you’re ready to move forward.
+
+# **F) Day 1 - Setting Up Production Database Architecture for AI Agent Systems**
+
+The next thing we’re going to do is run a script that populates our database with test data that we can actually use. Before we do that, though, I want to take a moment to show you what our data model looks like, so you understand what we’re building and how everything fits together.
+
+There’s a diagram that describes the data model. At the top of this model, we have a users table. This is a SaaS system, so different users will be able to log in and see their own separate portfolios as they interact with the financial planner. Each user’s data must be completely isolated from every other user’s data. To enforce this, users are keyed off a Clerk user ID, which ensures that a user can only ever see their own information.
+
+Each user can have multiple accounts. For example, you might have a brokerage account, a retirement account, and a savings account. All of these would belong to the same user. Each account, in turn, can have multiple positions. A position represents a holding. For instance, if you own ten shares of IBM stock, that would be a position, with a quantity of ten.
+
+The stock itself—IBM in this example—is represented by another entity in the database called an instrument. An instrument has a symbol, a name, and a current price. Finance professionals might point out that storing only a single current price on the instrument table is not ideal. In a more realistic system, you would probably want a full time series of prices.
+
+Originally, I did consider building a time-series pricing model, but I realized that we would get bogged down in financial details that aren’t the focus of this course. So, for simplicity, each instrument just has a current price. This is a simplification we’re choosing to live with, and it still allows us to deploy the system cleanly to production. If you’re interested in extending this later with a time series of prices, that would be a great enhancement.
+
+So to summarize the core relationships: a user has a user ID and can have multiple accounts; each account can have multiple positions; and each position references an instrument. One instrument represents something like Amazon stock, Google stock, or IBM stock, and many different users—through different accounts—can all hold positions in that same instrument.
+
+The last part of the data model that I haven’t mentioned yet is the jobs table, shown over on the right of the diagram. This doesn’t refer to job openings or employment. Instead, jobs represent tasks or runs. Every time we kick off an agentic process to manage something in the system, a new entry is created in the jobs table. You can think of these as task records. Each user can have many jobs associated with them.
+
+That’s the database schema we’re working with. Now that we understand it, we can run a test script that populates this schema with data for a single test account.
+
+To do this, we go back into the backend directory and then into the database directory. From there, we run the command uv run reset_db --with-test-data. This command resets the database if needed, runs all migrations, and loads the seed data.
+
+When the script finishes, you’ll see output indicating that a test user—user_001—has been created. This test user has three accounts, and within one of those accounts (a 401 account), there are five positions. If you look at the output closely, you can see the user being created, the three accounts, and the individual positions, each showing a number of shares in a particular instrument.
+
+You can relate all of this directly back to the entity diagram we just discussed. At this point, we’re not only the proud owners of an Aurora database, but also of a populated Aurora database, complete with a test user, accounts, positions, instruments, and jobs.
+
+If we now run uv run test_data_api again, we’ll get more detailed output. The database size has grown slightly, now around eight megabytes. It detects the five tables that we set up, and everything appears to be working correctly. This confirms that the database has been populated successfully.
+
+I encourage you to look through the schema and the code. The point here isn’t necessarily that you write all of this yourself, but that you understand what’s going on. Take some time to satisfy yourself that the code does what I’ve described and that you’re comfortable with how the system is structured, because we’re about to continue building this out toward production.
+
+As always, keep an eye on your AWS billing and cost management. If this is the end of your day and you’re taking a break, make sure to run terraform destroy to tear everything down. When you come back later, you can run terraform apply to build it again.
+
+Just remember one very important thing: every time you rebuild this infrastructure, you must copy the newly generated secrets back into your .env file. This step is easy to forget, but absolutely critical. Each rebuild generates new values, and your application won’t work unless your environment variables are updated.
+
+With that, we’ve completed the database build. I’ll see you back for the slides. Today was a gentle start to what’s going to be a very big week. We covered multi-agent architecture, the agent loop, the single-agent loop, database architectures in AWS, and then built our Aurora database.
+
+Tomorrow is a big day. We’ll be building and deploying agents as Lambda functions—five of them—and setting up a large amount of infrastructure. Make sure you get a good night’s sleep, because tomorrow is going to be huge.
+
+It’s also worth noting that you’ve reached about the 80% point in this course. You’re entering the home stretch now, with two days of deployment ahead. I’m really looking forward to it, and I’ll see you then.
