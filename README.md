@@ -198,6 +198,20 @@ AI Engineer MLOps Track: Deploy Gen AI & Agentic AI at Scale (Older Name - AI in
 
 **F) Day 1 - Setting Up Production Database Architecture for AI Agent Systems**
 
+**G) Day 2 - Building Multi-Agent Financial AI Systems with Context Engineering**
+
+**H) Day 2 - Setting Up AWS Bedrock Models and Enterprise APIs for AI Agents**
+
+**I) Day 2 - Exploring Multi-Agent Architecture: Tools and Structured Outputs**
+
+**J) Day 2 - Building Multi-Agent Financial Systems: Code Review and Architecture**
+
+**K) Day 2 - Testing Multi-Agent Systems Locally Before Lambda Deployment**
+
+**L) Day 2 - Packaging and Deploying Multi-Agent AI Systems to AWS Lambda**
+
+**M) Day 2 - End-to-End Testing of Multi-Agent Systems on AWS Lambda**
+
 
 
 # **A) Day 1 - Instant AI Deployment: Your First Production App on Vercel in Minutes**
@@ -3954,3 +3968,672 @@ With that, we’ve completed the database build. I’ll see you back for the sli
 Tomorrow is a big day. We’ll be building and deploying agents as Lambda functions—five of them—and setting up a large amount of infrastructure. Make sure you get a good night’s sleep, because tomorrow is going to be huge.
 
 It’s also worth noting that you’ve reached about the 80% point in this course. You’re entering the home stretch now, with two days of deployment ahead. I’m really looking forward to it, and I’ll see you then.
+
+# **G) Day 2 - Building Multi-Agent Financial AI Systems with Context Engineering**
+
+Welcome everyone to an epic day. Let’s get straight into it.
+
+Today is the first of our two days focused fully on the capstone project, and this is where we really start working on it in anger. Our goal is to build a set of agents that together form our application, Alex — the Agentic Learning Equities Explainer. Alex is a financial planner and a SaaS-style commercial application.
+Last week, we built the research agent. Yesterday, we focused on the database layer and designed the schema. In that schema, a user can have many accounts, each account can have many positions, and each position is associated with an instrument. We also introduced jobs, which are responsible for orchestrating and running agent activity.
+Today is the day we build the five core agents that sit at the heart of our Agentic AI platform. As a reminder, I previously showed you a fairly busy architecture diagram. That diagram doesn’t show everything — things like the Secrets Manager or API Gateways aren’t included — but it does show the major building blocks.
+
+The blue squares in that diagram represent our agents, which will be running on AWS Lambda. These are exactly what we’ll be building today. Tomorrow, we’ll focus on the yellow components in the top-left of the diagram, which include the frontend and backend API layer. For now, though, our focus is entirely on those blue squares.
+Of course, these agents will need to connect to Amazon Bedrock and to the Aurora Serverless database that we built yesterday.
+With that, let’s jump straight into the lab. Most of today will be hands-on lab work. Before we start building, however, I want to introduce an important concept that has become central over the last few months: context engineering. This concept fundamentally drives the way our agent architecture is designed.
+Let’s open Cursor and talk about context engineering. Inside the Alex folder, we’ll go to the guides directory and open section six, Agents, in preview mode. This guide is titled The AI Agent Orchestra, and it’s arguably the most exciting part of building Alex — a multi-agent AI system made up of five agents.
+These agents include the planner, tagger, writer, reporter, charter, and retirement agent. The diagram in the guide shows how they all fit together. Before going any further, make sure you’ve covered all the prerequisites.
+
+Now, let’s talk more deeply about context engineering. This term was popularized by several people, but it really took off after Andrej Karpathy tweeted “+1 for context engineering,” which sparked widespread interest. Shortly after, a Google DeepMind engineer named Philip Schmid wrote a seminal blog post on the topic that circulated widely. As part of DeepMind’s DevRel team, he works closely with developers on applied AI research.
+About a year ago, the buzzword was prompt engineering. Everyone wanted to be a prompt engineer. Over time, that idea lost its shine when people realized that prompt engineering often boiled down to phrases like “please explain” or “think step by step.” While helpful, these tricks didn’t fundamentally change outcomes. Writing clear prompts mattered, but it wasn’t enough.
+
+The new and far more important skill is context engineering. As Philip explains in his post, what truly matters in agentic systems is not just the prompt itself, but the entire context you provide to the agent so it can solve a task effectively.
+That context can include system instructions, long-term memory (often implemented using RAG and vector databases), access to tools, short-term memory such as conversation history, and even information from interactions with other agents. Finally, it includes the task itself — the user’s request. All of this combined forms the context the agent operates within.
+The key mindset shift is to stop obsessing over individual prompts and instead think holistically. What is the task you are assigning to this model call? How will you measure success? What information, tools, and structure will give the model the best chance of producing a high-quality outcome?
+Philip summarizes this beautifully: Building agents is less about the code you write or the framework you use. This is especially important because people often ask which framework they should choose. The truth is, frameworks matter far less than the quality of the context you provide. The difference between a cheap demo and a magical agent lies in context quality.
+
+His post walks through examples of agents that succeed because they’re given the right tools and information at the right time. He also explains the shift from prompt engineering to context engineering in detail, emphasizing that we’re no longer just crafting instructions — we’re designing systems.
+His definition is worth repeating: Context engineering is the discipline of designing and building dynamic systems that provide the right information and tools, in the right format, at the right time, to give a language model everything it needs to accomplish a task.
+While you’re there, it’s worth noting that Philip recently published another relevant post titled The Rise of Subagents. In it, he discusses how systems increasingly rely on subagents to handle specific user goals. This includes examples like Claude Code, which we mentioned earlier. Subagents are essentially specialized agents that a main agent can delegate work to within a single loop.
+
+He presents a clear discussion of the pros and cons of this approach. While breaking tasks into subagents can simplify individual responsibilities, it also introduces trade-offs and complexity. His conclusion is particularly insightful: Don’t overengineer a solution today that a simpler or better model can solve tomorrow. That’s wise advice.
+Finally, if you want to read more about context engineering, I highly recommend following Simon Willison. His blog is an absolute goldmine. He has written extensively about large language models, including context engineering, and even highlights Andrej Karpathy’s original tweet. Simon is also famous for getting LLMs to draw pelicans riding bicycles — an ongoing inside joke for readers of his blog.
+
+Overall, these readings will give you a strong conceptual foundation for the agent architecture we’re about to build.
+
+# **H) Day 2 - Setting Up AWS Bedrock Models and Enterprise APIs for AI Agents**
+
+I’m back in six_agents and previewing this guide. The first step here is to request access to a Bedrock model.
+
+In the guide, there’s a section describing the agents and the models to use. Initially, I wanted to use OS 120, the new open-source model for OpenAI. I started with it, and it worked fine at first, but then it stopped working. Because of that, I had to redo the setup without OS 120.
+
+Instead, I’ll be using Amazon’s Nova model range. These models are extremely quick to request access for, very cheap, and very reliable. I strongly suggest you start with Nova models as well.
+
+That said, the retirement and financial advice outputs from Nova are kind of “okay but not amazing.” If you’re willing to spend a little more, I encourage you to experiment with other models to get more powerful and nuanced answers. For now, though, we’ll stick with the cheap, reliable, and solid Amazon Nova models.
+
+First, go to the AWS Console and log in as your root user (or an editor role). In the search box, type Bedrock, which you should be familiar with by now, and open it.
+
+Once you’re in Bedrock, you’ll see the Model Catalog. You might even see a teaser saying that OSS models are available — which can feel a bit annoying if you can’t use them yet.
+
+On the bottom left, go to Configure and then click Model access. You may notice a yellow banner saying this model access page is going away on October 8th. If you’re watching this after that date, that’s actually good news, because the current UI is quite flaky and difficult to navigate. Hopefully, the newer experience is much better.
+
+Depending on what you see, the layout may be different, but the task is the same: figure out how to request access to the models you need. You likely already did this last week, so this should feel familiar.
+
+In my case, I’ve already requested and received access to Nova Pro, which is the main model we’ll use. I also have access to even cheaper Nova models, as well as the more advanced Nova Premier, although I won’t be using that one. Feel free to experiment if you want.
+
+I also have access to Claude Sonnet 4, which is an excellent model. However, for new accounts, the rate limits are quite low, and it didn’t work well for me without requesting an increase. I didn’t want to make that a requirement for you, so I won’t be using Claude Sonnet 4 in this lab.
+
+To summarize, you need to click Modify model access, select the models you want, and then click Save. For the Nova models, I got access almost instantly after refreshing the page, although in theory it can take a minute or two.
+
+To be safe, we’ll use US West 2 as the Bedrock region. This region does not need to match the region where the rest of your infrastructure lives. US West 2 simply offers the widest range of models.
+
+That said, I also requested access to the same models in US East 1, just to be safe. Sometimes it’s hard to tell which region your environment variables are pointing to, so having access in both regions can help avoid confusion.
+
+My recommendation is to request model access in US West 2, wait a couple of minutes, confirm access, and then come back to the lab.
+
+Now, moving on to step one.
+
+Production systems often make heavy use of enterprise APIs, and we’ll be doing the same here. Specifically, we’ll use an API to fetch the latest financial data.
+
+If you’ve taken my agent course before, you’ll recognize this API. We’ll be using Polygon.io, one of my favorite market data providers. It’s reliable, robust, and widely used in financial services.
+
+Polygon offers both a free plan and paid plans. For this course, the free plan is more than enough, unless you want access to live market data. I personally use the paid plan because I’m into that kind of thing, but it’s not required.
+
+Go to polygon.io, click Create Account, sign up for a free account, and generate your API key.
+
+Once you have the API key, come back here and set up your environment (.env) file with the required parameters.
+
+Someone often asks why we use Polygon instead of something like yfinance, which is free and doesn’t even require an API key. Yfinance is fine for personal projects, but it relies on Yahoo’s unofficial APIs. There’s no SLA, no support, and no guarantee of stability.
+
+For production-grade systems, every API matters. That’s why choosing an industry-standard, scalable, and supported API like Polygon makes much more sense. If this were a real SaaS product, you’d almost certainly be on a paid plan with proper rate limits.
+
+Now it’s time to populate your .env file.
+
+The Bedrock model ID must exactly match the model you were approved for. In my case, that’s nova-pro-v1. This value must be exact.
+
+Next, set the Bedrock region to the region where you requested model access — for me, that’s us-west-2. This can be different from your default AWS region for Lambda or other services.
+
+For example, my Lambdas run in us-east-1, but my Bedrock models are in us-west-2. That’s perfectly fine — they do not need to match.
+
+Double-check these values carefully. Mistakes here can be very hard to debug later, so it’s worth triple-checking everything.
+
+Then, add your Polygon API key to the environment file.
+
+Finally, set the POLYGON_PLAN variable. Use the value free if you’re on the free plan, or paid if you’ve subscribed. This tells the code whether to use cached end-of-day prices or intraday equity prices.
+
+That’s the full setup you need. I’ve already done this on my side, but you need to go into your own .env file and add these secrets.
+
+Go ahead and do that now, and I’ll see you back in the lab.
+
+# **I) Day 2 - Exploring Multi-Agent Architecture: Tools and Structured Outputs**
+
+So next up, I’ve got something that’s a bit of an exercise for you. This one is mainly a reading assignment, and it will make sense in just a moment.
+
+I want you to navigate to the backend folder in the Alex project. Open it up and you’ll see a number of directories inside. Some of these should already be very familiar to you.
+
+For example, you already know folders like ingest and researcher, which contains our research agent from last week. You’re also familiar with the database directory, because that’s what we worked on yesterday.
+
+However, there are several directories here that are new. The ones we’re interested in right now are charter, planner, reporter, retirement, and tagger. These are the new agent directories.
+
+Let’s pick one of them to explore. Open up the retirement directory and take a look at what it contains.
+
+What you’ll find is that each agent directory has a very similar structure. Once you understand the structure of one agent, you essentially understand them all.
+
+First, each directory contains a Python module called lambda_handler.py. You should recognize this from week two. This is the module that gets deployed to AWS Lambda.
+
+When you open it, you’ll see various bits of code, but the most important part is the lambda_handler function. This function is what gets executed every time the Lambda function is invoked.
+
+Next, there is a separate class called agent.py. This is where the actual agent logic lives.
+
+In this course, I’m using the OpenAI Agents SDK to implement the agent functionality. I use it because it’s my personal favorite, but the choice of framework really doesn’t matter here.
+
+We’re not using any particularly clever or advanced features of the OpenAI Agents SDK. We’re simply making LLM calls, using tools, and using structured outputs — all of which are supported by most agent frameworks.
+
+The OpenAI Agents SDK integrates with Amazon Bedrock via LiteLLM, and that’s how we’re connecting everything together. Frameworks like CrewAI do the same thing, also using LiteLLM, so conceptually they’re very similar.
+
+The important thing is that the core agent logic is implemented in agent.py. That’s where the code lives.
+
+There’s also a separate file called templates.py. This file contains the text used in prompts.
+
+Templates are a key part of context engineering, and together with agent.py, they define how each agent thinks and behaves. Each agent directory has its own templates.py file.
+
+Each of these agent directories is also its own UV project. That means each one has its own pyproject.toml file and its own virtual environment.
+
+You’ll also find a file called package_docker.py in each directory. Despite the name, this isn’t a Docker container itself. It’s a Python module that packages the Lambda code into a ZIP file.
+
+For example, in the retirement agent, it creates a ZIP file called something like retirement_lambda.zip.
+
+This packaging process uses a Docker container behind the scenes. The reason for this is that AWS Lambda runs on Linux, so we need to make sure the dependencies are built in a compatible Linux environment.
+
+To do this, we use a special Docker image provided by AWS. This is the same technique we used back in week two.
+
+If you remember week two, we had multiple scripts — shell scripts and PowerShell scripts — to handle packaging. This time, everything is done in Python, which makes life much easier. You don’t need separate scripts for Windows and macOS; you just run the Python module inside the UV environment.
+
+This approach is generally cleaner and more maintainable.
+
+You’ll also notice a file called observability.py. For now, you can ignore this file completely. We’ll come back to it later, so you can pretend it doesn’t exist for the moment.
+
+There are also some testing-related files, which we’ll discuss shortly. But before that, here’s your exercise.
+
+Your task is to go into each of the five agent directories and read through the code.
+
+Specifically, I want you to look at how each agent is created, which agents use tools, and which agents use structured outputs.
+
+Take a few notes as you go.
+
+Once you’ve done that, come back here and we’ll compare notes. We’ll walk through which agent does what, and how each one uses tools and structured outputs to achieve its task.
+
+Put me on pause now, go do that reading, and we’ll reconvene in a minute to compare what you found.
+
+# **J) Day 2 - Building Multi-Agent Financial Systems: Code Review and Architecture**
+
+Okay, how did that homework assignment go? Let’s go through it together and see if you got it right.
+
+We’ll start with one of the easiest agents, which is charter. This one is fairly simple and is responsible for generating JSON charts.
+
+If we open the charter agent and look at the code, you’ll see a create_agent function that sets everything up. When you read through it carefully, you’ll notice that this agent does not use any tools and does not use structured outputs.
+
+If you compare this with the Lambda handler, you’ll see that at the end of the flow, this agent is simply created with a set of instructions and a model. That’s it. There’s no extra machinery involved.
+
+The reason for this simplicity is that all we need the charter agent to do is generate charts in JSON format. That’s something we can describe very clearly in instructions, and the model can reliably do it without tools or schemas.
+
+I’ll be honest here: I used Claude Code to generate a lot of this code initially, and this was an example where Claude Code did a terrible job. It massively overengineered the solution.
+
+It built something extremely complex with tools, structured outputs, and layers of unnecessary logic. The tools themselves were complicated, and it took me quite a while to understand what it had done and then strip everything back to what was actually needed.
+
+In the end, all we needed was a simple agent that takes instructions and produces JSON. Once I simplified it, it turned out to be very easy and very reliable.
+
+This is a great example of why you need to be careful when using LLMs to generate code. They can sound extremely confident, generate tests, and declare success — but it’s still your responsibility to review the output critically.
+
+Often, LLMs make a big meal out of simple problems. You need to watch out for that and simplify aggressively when needed. The current version of the charter agent is clean, simple, and works well.
+
+Next up is the retirement agent, which you probably also noticed is fairly simple in terms of agent mechanics.
+
+If we go into retirement/agent.py, you’ll see there’s quite a lot of code devoted to preparing inputs, building context, running simulations, and assembling all the data needed for retirement planning.
+
+However, if you focus specifically on the agent itself, you’ll see that it does not use any tools and does not use structured outputs. The tools list is empty.
+
+If we jump back to the Lambda handler, we can see exactly where this agent is created and invoked. It’s just a retirement agent configured with a model and no tools.
+
+Once again, this is another case where Claude Code went wild and overengineered the solution. It originally built tools to retrieve Monte Carlo simulations and call them dynamically.
+
+But if the data is always going to be in the context anyway, there’s no point in creating a tool just to fetch it. If a tool is always called, then it shouldn’t be a tool — it should just be part of the context.
+
+As a general rule, you should ask yourself: is there any value in making this a tool call, or should it just be included directly in the context? In this case, the answer was very clearly the latter.
+
+As a side note, I’ll admit something personal here. I’m generally a very calm and friendly person, but Claude Code somehow brings out an angry version of me.
+
+When it repeatedly forgets instructions or keeps making the same overengineering mistakes, I genuinely lose my temper. I don’t know if you’ve had the same experience, but it really tests my patience.
+
+That said, Claude Code can be magical later on — just not for this particular part of the system.
+
+Before moving on, it’s also worth briefly looking at how we integrate with Amazon Bedrock here.
+
+We pass the Bedrock region as an environment variable, and we configure LiteLLM by specifying bedrock/<model-id> as the model name. This is how OpenAI Agents SDK knows to route requests through Bedrock.
+
+LiteLLM expects the Bedrock region to be set as an environment variable, and this is all clearly documented in LiteLLM’s documentation and the OpenAI Agents SDK docs.
+
+Everything here is done by the book, but it’s still worth taking a look at the code if you’re curious about how the integration works.
+
+So far, charter and retirement are both simple agents: no tools, no structured outputs.
+
+Now let’s move on to tagger, which is an example of an agent that does use structured outputs.
+
+In the tagger agent, when we create the agent, we pass an output_type called InstrumentClassification. When the agent finishes running, the result is returned as a structured output that conforms to this schema.
+
+This is the idiomatic way of using structured outputs in the OpenAI Agents SDK. It forces the model to return JSON that matches the InstrumentClassification specification.
+
+If you look at that schema, you’ll see that it’s designed to capture exactly the information we need — things like sector, geography, and instrument type.
+
+This allows us to rely on the model’s intelligence to correctly tag financial instruments in a structured and consistent way.
+
+If we wanted to make this even more powerful, we could equip the tagger with a tool — for example, a Polygon.io MCP server — so it could look up instruments dynamically.
+
+That would be a very advanced move. However, doing that would require moving from Lambda to something like App Runner so we could spawn the MCP server. You already know how to do that from last week.
+
+For now, though, we’re relying on the Nova model’s built-in knowledge and structured outputs, and that works perfectly well.
+
+Next, we move on to the reporter agent.
+
+If you open the reporter agent, you’ll see that this one does use a tool. The tool is called get_market_insights.
+
+This tool queries our S3-backed vector store to retrieve insights about what’s happening in the market, based on the information that our research agent has been continuously writing there.
+
+This is how we connect what we built last week with what we’re building this week. The reporter agent pulls research insights and uses them to write a financial report.
+
+Aside from that, the reporter agent follows the same familiar pattern: connecting to Bedrock via LiteLLM and using carefully written prompts to generate its output.
+
+Finally, we come to the planner agent, which is the most important one because it ties everything together.
+
+The planner uses tools extensively. It defines several function tools using the OpenAI Agents SDK decorator, which turns Python functions into callable tools.
+
+These tools correspond to the reporter, charter, and retirement agents. Each tool builds the required JSON payload and invokes the corresponding Lambda function.
+
+You might notice that I’m using something called a run context wrapper here. This is a feature of the OpenAI Agents SDK that allows you to pass shared context between tool calls.
+
+I use it to pass the job ID around so that every tool invocation knows which job it’s working on. This is a clean and well-documented approach.
+
+There are hacky ways to do this using globals — which is exactly what Claude Code tried the first time — but that’s not the right way to do it. I had to tell Claude off, quite forcefully.
+
+Don’t get distracted by that detail, though. The key idea is that the planner agent is equipped with tools so it can autonomously decide which agents to call and in what order.
+
+At this point, you might be wondering something important: if the planner is calling reporter, charter, and retirement, where is tagger?
+
+The answer is that tagger is handled differently.
+
+The planner agent is responsible for autonomous decision-making — deciding which high-level tasks need to be done and calling the appropriate agents via tools.
+
+Tagging instruments, however, involves iterating through database records and checking which instruments are missing metadata. That kind of loop is much better handled with plain Python code.
+
+If we look inside lambda_handler.py, you’ll see that before the planner agent runs, there’s a call to handle_missing_instruments.
+
+This function scans the database, finds instruments that need tagging, and then directly invokes the tagger Lambda function for each one.
+
+This is an example of an agentic workflow, not an autonomous agent decision. We orchestrate it with code because that’s the right tool for the job.
+
+In short, autonomous reasoning is handled by the planner using tools, while repetitive, deterministic tasks like tagging are orchestrated directly in Python.
+
+If all of that didn’t fully click, don’t worry. The main goal here was to give you insight into the architectural decisions behind this agentic system and why certain things are autonomous while others are not.
+
+# **K) Day 2 - Testing Multi-Agent Systems Locally Before Lambda Deployment**
+
+And I know you want me to hurry up and deploy this and see some action, but I think there are some really good tips and tricks here that I do want to give you some insight into.
+
+Two more things to mention to you.
+
+One of them is that you’ll see that I’ve used traces carefully everywhere. So if we come back to this here, you’ll see that when we run the orchestrator, I do it with trace. And there is the planner orchestrator. So that we’re always using traces, remember?
+
+That means that we’re going to be able to see it in the OpenAI Agents SDK screens. We’ll be able to trace what messages are sent to what.
+
+The other thing I wanted to mention is right here: I’m using a very nice package called Tenacity, which is a really simple, cool way to decorate functions so that they automatically retry on different exceptions.
+
+It is quite common to get rate-limit errors if you call an LLM in Bedrock and you exceed a certain number of requests per minute. So what I’ve got here, just by using this decorator, is something that will automatically retry this run orchestrator up to five attempts.
+
+You can see that there’s what they call an exponential backoff in terms of how long it waits each time. Tenacity is a great package for this. Another one is actually called Backoff, but I’m using Tenacity here, which is very popular.
+
+This gives you a nice reusable way of having retry logic, which is a great thing to do, particularly with rate-limit errors. I’m only doing it when there’s a rate-limit error. This is a best practice that you should replicate for resilient agentic solutions in production.
+
+But there is one more thing to point out, which isn’t so much about the code. It’s about the whole way this thing works that might not be clear to you. You may already get this or you may not.
+
+Normally, with an agentic framework like the OpenAI Agents SDK, you would have tools to call each of the different sub-agents in a multi-agent system. You would equip your model with those tools, and then the model would decide, “Okay, I’m going to call this tool,” which would then call the other agent. All of that would happen inside your Python module, inside your process.
+
+There’s something very different here.
+
+It’s easy to show if the planner agent chooses, for example, to use its function tool called InvokeCharter. The description is “invoke the Chartmaker agent to create portfolio visualizations.”
+
+What that actually does is call the function invoke_charter. You might think that this then makes a call to the other agent code to run the charter.
+
+But when we look at what invoke_charter actually does, we see that it makes a Lambda serverless call. This is the key to everything we are implementing, maybe for this entire week and beyond.
+
+The tool call that the OpenAI Agents SDK makes is actually making an external call to another Lambda process, another serverless function on a different endpoint.
+
+That means each of our agents can run in separate Lambda processes that connect to each other. When the planner uses its tools, those tools make calls to different Lambda serverless processes. That is how our whole agent orchestra collaborates.
+
+It would be possible to build this all into one Lambda, similar to how things were built in the Agentic AI course, where everything ran in a single Python module and process. But then everything would run on one Lambda.
+
+That approach would not be distributed, it would not be scalable, and you wouldn’t be able to watch different Lambda functions work in parallel.
+
+This way is the enterprise-strength approach. Each call to a different agent involves calling a different Lambda function. You have separate Lambda functions for each agent.
+
+I hope that made sense. If not, go back and listen again, because this is really important.
+
+Go back and look at the code in agent.py in the planner. Satisfy yourself that when it uses tools, it’s actually calling out to different Lambda functions, not just different agent code.
+
+This point is so critical that I’m emphasizing it again with the diagram. We’ve been looking at the planner Lambda function. The planner Lambda has three tools: reporter, charter, and retirement.
+
+It also has workflow-style code that makes multiple calls to the tagger.
+
+What you saw in the implementation is that when the planner calls, for example, charter, it’s not calling charter’s agent code directly. It’s making a serverless API call to the Charter Lambda.
+
+When the Charter Lambda is invoked, it wakes up and runs its own agent code.
+
+Each of these agents runs on its own serverless endpoint. Each one can independently respond to requests and process them.
+
+As the planner orchestrates the workflow, it calls different Lambda functions. This is the key ingredient that takes us from agent projects that ran in a single Python process to a distributed, multi-process, serverless architecture.
+
+Okay, that’s enough chit chat. Let’s get to action.
+
+We’ll now go into each directory and take a look. You’ll notice that each one has two test files: test_simple and test_full.
+
+Test_simple is designed to run a simple local test before deployment. Let’s run those now.
+
+We start in the backend directory and begin with the tagger, which is the simplest.
+
+This agent uses structured outputs to classify an instrument like IBM stock or Google stock by region and asset class.
+
+We run uv run test_simple.py.
+
+The test uses the OpenAI Agents SDK, classifies the Vanguard Total Index fund, and runs on Amazon Bedrock using Nova Pro.
+
+The test completes successfully. VTI is classified as an ETF and saved in the database.
+
+Next, we test the retirement agent.
+
+Again, we run uv run test_simple.py. This agent uses Nova Pro and produces text output only. No tools, no structured outputs.
+
+It generates an assessment of retirement readiness based on the test user’s portfolio. The output looks correct.
+
+Next, we test the charter agent.
+
+This agent generates JSON chart definitions. It uses chat completions and Nova Pro through Bedrock.
+
+It produces a horizontal bar chart, portfolio allocation charts, industry sector distribution, and geographic exposure charts.
+
+Even without tools or structured outputs, the agent is autonomous in deciding which charts to create.
+
+Next, we test the reporter agent.
+
+This agent is more complex because it has a tool to query market research from S3 vectors. It decides to call GetMarketInsights.
+
+After collecting insights, it calls Nova Pro to generate the report.
+
+The output is returned successfully, showing both the start and end of the generated report.
+
+Next, we test the planner agent.
+
+This is the most complex test. We run test_simple.py, which executes the planner locally.
+
+The planner creates a fake job ID and calls its tools: reporter, charter, and retirement.
+
+Notice that it does not call the tagger because no new tagging is required.
+
+After a few seconds, the planner completes successfully and returns Success: True.
+
+The planner does not produce output; it only orchestrates execution.
+
+What we’ve shown is that each Lambda function can be tested locally and passes.
+
+All agents are calling Bedrock Nova Pro v1 and are managed using the OpenAI Agents SDK.
+
+If you’re following the guide, this corresponds to step 3.6.
+
+In the parent backend directory, there is also a test_simple file.
+
+Running this test executes all five agent tests sequentially.
+
+This provides a full system sanity check.
+
+After about a minute, the results show that all five tests passed and zero failed.
+
+You now have five directories, five UV projects, each with a handler.py and an agent.py.
+
+Each agent performs its task independently and has been tested successfully.
+
+We are in excellent shape.
+
+The next step is to package everything and deploy it to Lambda, then test it live on the internet.
+
+Let’s do that next.
+
+# **L) Day 2 - Packaging and Deploying Multi-Agent AI Systems to AWS Lambda**
+
+And now we’ve reached step four of the guide.
+
+The big thing to do now is to package everything up for Lambda.
+
+This time, we’re not going to do them one by one, because there’s a nice little script in the parent backend directory.
+
+So we CD into backend. There we are.
+
+Now I’m going to run uv run package_docker.py.
+
+And off it goes. Packaging, packaging, packaging.
+
+Let’s quickly explain what this is doing.
+
+It’s using Docker to perform the packaging process. We are not building a Docker container, even though that can be confusing.
+
+We’re using Docker to make sure that what we package is compatible with Linux, which is what Lambda runs on. This is a very common technique.
+
+We’re packaging each agent together with its dependencies.
+
+We’re creating different zip files that will later be deployed to Lambda.
+
+This process will take several minutes.
+
+What we expect to see is that, in each subdirectory, a fresh zip file is created.
+
+If we look inside one of the directories, such as charter, we’ll see that there was already a zip file there from before.
+
+However, each of these zip files is now being recreated.
+
+This will continue for a few minutes, and once it’s finished, we’ll have packaged zip files for each agent.
+
+You can already see that while I’ve been talking, the first one has completed.
+
+In a moment, they’ll all be done.
+
+And now it’s finished.
+
+Everything has been marked as success. Five out of five packages completed successfully.
+
+We now have five new zip files, one in each subdirectory.
+
+Okay, it’s time to deploy.
+
+We go back to the Terraform directory.
+
+Inside Terraform, there is a 6_agents directory that contains the Terraform configuration for our agents.
+
+The first thing we do is copy this Terraform configuration and make it our official Terraform setup.
+
+You can right-click, copy, paste, and rename it appropriately.
+
+Inside this configuration, we need to set a few values.
+
+We need to set the Lambda region. For me, that’s us-east-1. You should use whichever region you are working in.
+
+You can leave the Aurora cluster ARN and secret blank, because Terraform will look those up from the existing infrastructure.
+
+You will need to populate the S3 bucket name, which should be alex-vectors.
+
+You’ll also need your AWS account ID, which is the same one you used earlier in part three.
+
+Next is the Bedrock model ID. I recommend using Nova Pro.
+
+You’ll also need the Bedrock region, which I recommend as us-west-2.
+
+We also need the SageMaker endpoint name, because the agent needs it to vectorize questions for research lookups.
+
+Finally, you need the Polygon API key and the Polygon plan, which should be either free or paid.
+
+There are quite a few values to fill in here.
+
+If you open the example file, you’ll see that everything is already laid out for you.
+
+You can fill in the region, or leave it blank if you want Terraform to populate it automatically.
+
+You can also paste in your actual credentials and keys if you wish.
+
+You’ll need to specify alex-vectors, the Bedrock model ID, the SageMaker endpoint, and the Polygon key and plan.
+
+There’s also a commented-out section related to Langfuse or Langviews. Leave that commented out for now—we’ll come back to it later.
+
+Once everything is filled in, save the file as terraform.tfvars.
+
+Now it’s time to run Terraform.
+
+Before doing so, just to be extra safe, I copied the Aurora secrets from my .env file into the terraform.tfvars file.
+
+You should do the same.
+
+Now we go into the Terraform directory.
+
+From there, we go into the 6_agents directory.
+
+We start by running terraform init.
+
+This should be quick for me, but it may take a little longer for you.
+
+Once that completes, we run terraform apply.
+
+This is the big one.
+
+Terraform will show us everything it’s about to create.
+
+We type yes to confirm, and off it goes.
+
+Terraform is now deploying five different agents as five different Lambda functions.
+
+It uploads the packaged zip files to S3 and then attaches them to the Lambda functions.
+
+It also sets up SQS, the Simple Queue Service, which will allow our UI to submit jobs asynchronously.
+
+CloudWatch logs, IAM roles, and policies are also created as part of this process.
+
+Once it finishes, we see that everything has been deployed successfully.
+
+Terraform outputs useful information such as the model, the region, the SQS queue, and the CloudWatch log groups.
+
+The next step isn’t strictly necessary, but it’s a good best practice.
+
+Any time you change code, you should redeploy all Lambdas.
+
+So we go back to the backend directory.
+
+We run uv run deploy_all_lambdas.py.
+
+This process first “taints” the Lambda resources, marking them as needing redeployment.
+
+It then redeploys all five Lambda functions with the latest packaged code.
+
+We let that run.
+
+And now that has completed successfully.
+
+Now we reach what I don’t use lightly: the moment of truth.
+
+We’re going to test each of our agents remotely.
+
+We’ll start with the simplest one: the tagger.
+
+We go into the tagger directory and run uv run test_full.py.
+
+The difference between test_simple and test_full is that test_full makes an actual Lambda call.
+
+It sends three instruments to the tagger Lambda running in the cloud.
+
+The Lambda function spins up, which may take a bit longer the first time.
+
+It tags all three instruments.
+
+The test completes successfully with no errors.
+
+That’s a success.
+
+Next, we go to the reporter and run uv run test_full.py.
+
+This executes the reporter as a Lambda function.
+
+We can see from the logs that the instruments were successfully tagged in the database.
+
+Some of the portfolio composition numbers look a bit surprising, but the tagging itself worked.
+
+The reporter Lambda completes successfully and generates a report.
+
+Any strange extra output can safely be ignored, as the report was clearly generated correctly.
+
+Next, we test the charter.
+
+We run uv run test_full.py.
+
+While that’s running, we can demonstrate Lambda’s asynchronous nature.
+
+We open another terminal and start the retirement agent in parallel.
+
+We run uv run test_full.py in the retirement directory.
+
+At the same time, we open another terminal, go into the planner directory, and run its test.
+
+All of these Lambda functions are now running concurrently.
+
+The charter finishes first and produces a set of charts, just like it did locally.
+
+This time, however, it ran fully on Lambda.
+
+The retirement agent also completes successfully.
+
+The planner is still running, which is expected since it orchestrates all the others.
+
+We can see it monitoring job progress.
+
+The planner test takes a bit longer because it calls all the other agents.
+
+I’ll come back in a moment once the planner—the final test—has completed.
+
+# **M) Day 2 - End-to-End Testing of Multi-Agent Systems on AWS Lambda**
+
+And there we have it. The last test was successful, which concludes our five remote tests of each of our agents by calling their serverless functions running on Lambda.
+
+And it remains for us now to do a proper full end-to-end test by going into the backend folder and running this thing called test_full.
+
+So what does that do? Well, let’s first cue ourselves up by running cd backend. Actually, what I might do is run it first and then talk about it.
+
+So we’ve run test_full.py. Let’s leave this running. Off it goes.
+
+Let me show you what it actually does. This is test.py. Here it is.
+
+So it starts by setting up some data if it doesn’t already exist, but in our case the data is already there.
+
+It then looks for a particular queue called Alex Analysis Jobs, which is an SQS queue, and it checks that it’s there.
+
+Then it basically calls send_message to SQS. So we are putting a message on the queue with a job ID on it, and once we’ve sent it, that’s what happens.
+
+After that, we monitor what’s going on.
+
+So this is how it works. This is how we put something on SQS and let that be picked up by our planner agent that is running out there on Lambda.
+
+So we’ll let this do its thing, and I’ll see you in a minute back here.
+
+And that has completed.
+
+And by the way, if you were thinking a moment ago, “But hang on, isn’t that just how the test full in planner works anyway?” — the answer is yes, it is.
+
+I know, but it seems more important if we run it from the parent directory, because the test gives more output and prints more information.
+
+So that’s why we do it this way.
+
+So here it is: the job completed successfully. It gives you the results of the analysis, the report that was generated, the executive summary, and the job details at the end.
+
+For me, it took about a minute and a half.
+
+And so that is a completed end-to-end test.
+
+There are some more tests in here as well. Actually, I think I might have deleted one of them because there were too many test files, so I might remove that.
+
+But you can always write that yourself. You could write a test for multiple accounts if you wish.
+
+But never fear — we will be doing that ourselves, properly, next time.
+
+I know this feels a bit abstract because everything we’ve been running has been happening behind the scenes.
+
+If you wanted to, you could go into the AWS console, take a look at CloudWatch, and see some evidence that things really have been happening.
+
+The only reason I’m not doing that now is because, in two days’ time, we have observability, and we’re going to be really digging in to see everything that’s been going on.
+
+So for the time being, we have to trust that our test class is being honest when it says that all these things have happened.
+
+That six visualizations really were created by that agent running on the cloud, called by another agent.
+
+That different Lambda functions on the internet called each other, and that our agents collaborated to produce this financial planning analysis.
+
+All right, let’s go back to the slides to wrap up.
+
+So I promised you a big day, and hopefully you agree that I delivered. It was a big day.
+
+We got a ton done.
+
+We built out this Lambda deployment with agents deployed to serverless functions, calling other agents deployed as serverless functions, and orchestrating themselves in production on the internet between different AWS services.
+
+Exciting stuff.
+
+And tomorrow, we bring it to life with a front end. So you’ll actually see this happening.
+
+It’s going to be really, really great.
+
+And that brings us to the 85% point. So much is happening.
+
+Today — today you really earned that 5%. It was a big 5%.
+
+And tomorrow is going to be super satisfying. I hope you’re excited for it.
+
+By that point, we’ll get you to 90% as we reach the very final stretch of you having the expertise to be able to deliver AI at production grade.
