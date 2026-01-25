@@ -212,6 +212,50 @@ AI Engineer MLOps Track: Deploy Gen AI & Agentic AI at Scale (Older Name - AI in
 
 **M) Day 2 - End-to-End Testing of Multi-Agent Systems on AWS Lambda**
 
+**N) Day 3 - Building the Frontend for Your Production AI Agent System**
+
+**O) Day 3 - Running Full-Stack AI Apps Locally Before Production Deployment**
+
+**P) Day 3 - When AI Code Generation Works vs Fails in Production Apps**
+
+**Q) Day 3 - Deploying AI-Generated APIs to Production with AWS Lambda & Terraform**
+
+**R) Day 3 - Testing Your Multi-Agent Financial AI System Live in Production**
+
+**S) Day 4 - Enterprise-Grade AI: Monitoring, Security & Observability at Scale**
+
+**T) Day 4 - Enterprise-Grade AI: Scaling, Security, and Monitoring for Production**
+
+**U) Day 4 - Monitoring AI Agents in Production with CloudWatch and Dashboards**
+
+**V) Day 4 - Monitoring AI Systems and Building Guardrails for Production Agents**
+
+**W) Day 4 - Advanced LLM Observability with Langfuse and Production Guardrails**
+
+**X) Day 4 - LLM-as-a-Judge Pattern with Langfuse Observability in Production**
+
+**Y) Day 4 - Real-Time Agent Monitoring and the Security Risks of Production AI**
+
+**Z) Day 4 - Securing AI Agents Against Prompt Injection in Production Systems**
+
+**AA) Day 4 - Capstone Assignment: Taking Your AI Financial Agent to Market**
+
+**AB) Day 5 - Enterprise AI Guardrails and Wrapping Your Production Agent System**
+
+**AC) Day 5 - Agent Platforms vs Custom Deployment: When to Use Managed Solutions**
+
+**AD) Day 5 - Building Production AI Agents with Amazon Bedrock AgentCore**
+
+**AE) Day 5 - Setting Up AWS Bedrock Agent Core for Production AI Deployments**
+
+**AF) Day 5 - Building and Deploying Your First AI Agent to AWS in Minutes**
+
+**AG) Day 5 - Building Production AI Agents with Loop-Based Reasoning Systems**
+
+**AH) Day 5 - Adding Code Execution Tools and Observability to AWS Bedrock Agents**
+
+**AI) Day 5 - Course Wrap-Up: From Zero to Production AI Expert in 4 Weeks**
+
 
 
 # **A) Day 1 - Instant AI Deployment: Your First Production App on Vercel in Minutes**
@@ -4637,3 +4681,1270 @@ Today — today you really earned that 5%. It was a big 5%.
 And tomorrow is going to be super satisfying. I hope you’re excited for it.
 
 By that point, we’ll get you to 90% as we reach the very final stretch of you having the expertise to be able to deliver AI at production grade.
+
+# **N) Day 3 - Building the Frontend for Your Production AI Agent System**
+
+I am looking forward to today. This is week four, day three, and today is the day we complete the build-out of the capstone project by adding the front end. This is not the absolute end of the capstone project, because we still need to make it enterprise-grade, but by the end of today it will be significantly more built out. Over the course of the next day, we’ll take it even further.
+
+Just to remind you once again what Alex, the financial planner, is—although by now you should be very familiar with it—it is a SaaS commercial application that acts as a financial planner and includes subscription capabilities for users.
+
+Last week, we built the research agent. Two days ago, we built out the database capability using Aurora Serverless v2. Yesterday—which was a big day—we built five different agents running on AWS Lambda to orchestrate the process of financial planning for a user.
+
+Today, we are adding the front end. When I say front end, I really mean both the front end and the back end API layer that the front end will call.
+
+You are already familiar with the agent diagram, but I want to show it one more time because by now it should really be clicking. Yesterday, we built the five blue boxes in the middle. These include the planner, which orchestrates everything, and the tagger, which works more like a workflow—a series of Python steps that repeatedly call the tagger and then use tools to call the reporter, charter, and retirement agents.
+
+We also built the yellow SQS queue, enabling the planner to listen to messages. We tested that setup, and all of the agents use Bedrock frontier models, specifically Nova (and hopefully you’ve also tried OSS-120). All of this is backed by Aurora Serverless v2.
+
+What I didn’t include in that diagram—but you should still have in mind—is that this system also taps into everything we built last week, including SageMaker and Bedrock components on the side.
+
+One important production-grade point I want to emphasize again is that we didn’t just take a single piece of software—like an OpenAI Agents SDK runner—and use tools inside one monolithic execution. Instead, each tool call results in a call to a different Lambda function.
+
+Each of these blue boxes represents a completely separate deployed service, running serverless on AWS. The planner doesn’t know whether it’s calling another agent, some Python logic, or something else entirely—it just knows it’s invoking a tool. This approach—deploying each agent as its own Lambda function—is a highly scalable and very common production architecture for agentic systems.
+
+Hopefully by now you’ve seen this clearly in the code, and everything is starting to click.
+
+So what are we doing today?
+
+We are adding two major components. First, we are adding the front end, which will be a Next.js application. We’ll build it as a static site, deploy it to S3, and then distribute it globally using a CloudFront distribution.
+
+Second, we’ll add a backend API, implemented as another Lambda function, which the front end will call to populate data. This API Lambda can also query Aurora Serverless to retrieve information that will be displayed in the UI.
+
+There are a couple of important technical details to remember. One is CORS—we must ensure the browser front end has permission to call the backend API. Another is that the front end will not call Lambda directly. Instead, it will call API Gateway, which then invokes the Lambda.
+
+Using API Gateway is the enterprise-grade approach because it allows us to configure rate limiting, throttling, and abuse protection. These are all best practices, and we’ll be following them here.
+
+Now let’s get into it.
+
+We’re back in Cursor, in the Alex project. We’ll go into the guides directory and open Guide 7: Front End. Opening the preview shows us the section titled Building Alex’s Front End.
+
+This diagram is more detailed than the previous one and highlights a few important additions. First, we are bringing back Clerk for authentication, which we originally introduced all the way back in week one.
+
+The web pages will be served through CloudFront, which is a Content Delivery Network (CDN). These pages are static files stored in S3. When the browser needs backend data, it makes requests through API Gateway, which triggers a Lambda function. That Lambda then places messages on SQS, which kicks off the agent workflows. All of this ultimately interacts with Aurora.
+
+The first step is to get started with Clerk.
+
+Here’s the good news: the instructions describe how to create a brand-new Clerk application with subscription plans. But we don’t need to do that, because we already set this up in week one for our SaaS application. We can simply reuse the existing Clerk setup.
+
+You can leave the application name as “SaaS” for now—it can always be renamed later. If you want, you could create a new app in the Clerk dashboard, but it’s much easier to just open the existing SaaS repo, locate the env file, and reuse the keys from there.
+
+In the front end directory, you must create a file called env (be careful with the name and location). This file must live inside the front end folder, not in the parent directory.
+
+That env file should include:
+
+A NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY starting with pk_
+
+A CLERK_SECRET_KEY starting with sk_
+
+The remaining variables exactly as shown in the guide
+
+Once that file is in place, the next step is to edit the env file in the project root (Alex’s root directory). This is a server-side environment variable.
+
+Here, you need to add the Clerk JDBC URL. Use the exact JDBC URL you already had from week one. If you no longer have that repo, you can retrieve it directly from the Clerk dashboard—the guide explains where to find it.
+
+Once that JDBC URL is added to the root env file, everything should be correctly configured.
+
+And with that, we’re ready to put the show on the road.
+
+# **O) Day 3 - Running Full-Stack AI Apps Locally Before Production Deployment**
+
+I hear what you’re saying, but before we launch anything, we should at least look at the code for a moment. We should see what it is that we’re actually about to launch. So let’s take a quick look at the front end.
+
+If you open the front end directory, you’ll notice the word pages right away. That’s your clue that we’re using the Pages Router, not the App Router. You remember there are two different routing approaches in Next.js.
+
+The reason we’re using the Pages Router is because, as you may remember from week one, Clerk requires the Pages Router when used with a static website. It’s not yet fully ready for the App Router in that setup.
+
+If we look inside the pages directory, you’ll see the familiar _app.tsx file. There’s quite a bit going on here. You’re welcome to look through the code yourself. As you’d expect, it’s a TypeScript-based Next.js app, styled with Tailwind CSS, just like what we built in week one.
+
+Now, this isn’t a course on building user interfaces, so we’re not going to walk through all of this line by line. But there is something important I want to tell you.
+
+Yesterday, I mentioned my experience using Claude Code while building the agentic backend. That experience was… frustrating. I lost my temper a bit. Sorry about that. You don’t need to worry—when the overlords take over, I just hope Claude can’t look back at some of the things I said. Otherwise, I’ll need you all to bail me out and explain that I’m not normally like that.
+
+That said, the front-end experience was completely different.
+
+Maybe it’s because I’m a terrible front-end developer—but I don’t think that’s the whole story. The quality of the front-end code generated by the AI was excellent. Where the backend agentic code made mistake after mistake, the front end was built quickly, cleanly, and accurately.
+
+I only needed to give minor fine-tuning—small design tweaks or adjustments to things that felt a bit janky. The AI picked those up almost immediately.
+
+So here’s the key takeaway: if you’re not a front-end developer, that’s not a problem at all. Claude Code—or the Cursor agent, which can do the same thing—can do a fantastic job here. You still need to give direction. You still need to explain what you want. But you don’t need to micromanage implementation details.
+
+For example, I didn’t have to describe how to structure the pages. The high-level layout follows the same cloud provider pattern we used before. If you go into something like documents, then into accounts, you’ll see very clean, well-structured code.
+
+It’s nicely laid out, uses Tailwind classes consistently, follows the color scheme I provided, and matches the brand styling I described. Each section of the UI is thoughtfully constructed.
+
+I’m not planning to go through this front-end code in detail—especially since I didn’t really write it. I only finessed it slightly. Most of this was LLM-generated, and it really shows what you’re capable of producing with the right prompts and guidance.
+
+All of this lives under the pages directory. There’s also a separate directory for looking up individual accounts, which serves as the account details page.
+
+You’ll also notice the main navigation structure: Dashboard, Accounts, Advisor Team, and Analysis. These are the four main navigation sections you’ll see in the UI. The index page serves as the home screen.
+
+Again, all of this was created through interactions with AI agents. I provided the color scheme, specified that it needed to be a Pages Router–based Next.js app, and the AI handled the rest.
+
+Okay—that’s enough of the intro.
+
+It’s time to run the good old npm install and get this thing running.
+
+I’m opening a new terminal window and changing directories into front end. I’m excited. Slightly jittery.
+
+Now we run npm install. For me, this will be very quick. For you, it may take a bit longer. This step installs all the Node modules associated with the project, including React, Next.js, Tailwind, and others. This can take a minute or two.
+
+Now, we’re almost ready to kick everything off and run it locally—but there’s one more ingredient I haven’t talked about yet.
+
+You know what that is?
+
+It’s the API.
+
+There’s one more folder in the backend that I haven’t mentioned. If you look inside the backend directory, you’ll see another folder called api. Open that up and you’ll see it’s a UV project, just like the others.
+
+This is simply another Lambda function. It contains a small Lambda handler that calls main. If you look through the code, you’ll see fairly standard boilerplate logic that routes API requests—things like fetching user details or retrieving accounts.
+
+Each of these API routes makes database calls using the shared database package we built two days ago. For example, there are routes to retrieve individual accounts.
+
+My experience building this API layer was very similar to the front end. I told the language model agent what I wanted, and it generated all of this boilerplate code correctly on the first try. I didn’t need to debug it. I didn’t need to tweak it. It just worked.
+
+So again, contrast that with yesterday’s experience building agentic workflows, where things were hit and miss. For boilerplate code, especially API layers tied closely to a database schema, the AI was fast, reliable, and extremely impressive.
+
+With that in mind, you’ve now seen the API layer.
+
+The next step is to move to a folder I haven’t shown you yet: a root-level directory called scripts.
+
+Inside scripts, there are several utilities. One of them is called run.py, and that’s what we’re going to run now.
+
+I’ll change directories into scripts, which is also a UV project. From there, we’ll run:
+
+uv run run_local.py
+
+What this does is start both the backend and the front end locally.
+
+The backend runs on port 8000, and the front end runs on port 3000. The configuration ensures that the front end correctly proxies requests to the backend on port 8000.
+
+Everything is now running locally on my machine. No Lambda calls. No cloud deployment. Just a local environment where we can see everything working end to end.
+
+So with that set up, let’s go take a look at it running.
+
+# **P) Day 3 - When AI Code Generation Works vs Fails in Production Apps**
+
+Command… click here… and—whoa.
+
+Up immediately comes the landing page: Alex, AI Financial Advisor.
+“Your AI-powered financial future.”
+
+I may refine this a little bit, and I tweaked it slightly, but almost everything you see here—including the copy—was written by Claude Code right out of the gate. It’s a genuinely great landing page. You can see the three sections laid out clearly, including Meet Your AI Advisory Team, complete with a nice hover effect and highlighting.
+
+There’s also a Start Your Analysis section and a fake Watch Demo button that doesn’t do anything yet—that’s for future use. Eventually, all of this will be fully hooked up to Clerk.
+
+Now the real question: does it work locally?
+
+Can I press the Sign In button and log in using the same credentials we used for the SaaS app all the way back in week one?
+
+Let’s try it.
+
+I press Sign In, it takes me to Google, I choose my Google account—and I don’t even need to, because it already knows who I am. And bam.
+
+We’re in.
+
+We land on the dashboard, and let me pause for a moment and really let this sink in. What you’re looking at here is a brand-new, empty user logging in for the very first time.
+
+You’re seeing the dashboard screen, complete with a disclaimer that I explicitly asked it to add—stating that this is not official financial advice. The dashboard shows a portfolio value, number of accounts, asset allocation, and last analysis.
+
+There are also settings we can adjust. For example, I can change my name to Donna and press Save Settings.
+“Settings saved successfully.”
+You even get a little toast message at the top.
+
+Now my name is updated.
+
+I can also set a target retirement income. Let’s say an annual income of $80,000—that would be nice. Notice the formatting: beautiful locale-aware number formatting. That was another small thing I asked it to do.
+
+I save the settings again.
+
+Now check this out.
+
+If I adjust the North American exposure slider and say I want 80% of my portfolio to be North American, watch what happens. As I drag it, the other allocation automatically adjusts downward. I set it to 80%, and the pie chart animates smoothly into place.
+
+It’s gorgeous.
+
+I didn’t implement any of that. I didn’t explicitly tell it to do any of this. It worked on the first pass. This is a polished, professional, production-quality UI.
+
+Another toast message pops up. Everything looks great.
+
+So at this point, we have both the landing page and the dashboard page of our Next.js app fully functional. It’s hooked up to the API, and every change we make is being persisted in the database. These settings are saved via the FastAPI backend running on localhost:8000.
+
+This is a true front-to-back full-stack application, running entirely locally, and it’s extremely impressive.
+
+Now let’s move over to Accounts.
+
+At first, it looks clean and empty—no accounts found. But there’s a Populate Test Data button. This wasn’t there initially; I asked it to add this later and gave it a bit of specification. Once I pressed it, everything worked.
+
+I click the button.
+“Populating test data… populated successfully.”
+
+And just like that—bam—everything appears.
+
+We now have a test portfolio with cash, multiple accounts, and positions. There are three accounts: a Brokerage Account, a Roth IRA, and a 401(k).
+
+If you’re not familiar with those terms, that’s completely normal. I wasn’t either before moving to the US. These are US-specific retirement accounts. A 401(k) is a tax-deferred employer-sponsored savings plan, and a Roth IRA is a similar personal investment account.
+
+You’d likely customize these for your own region, but they serve perfectly for demonstration.
+
+Now let’s click Edit on one of these accounts.
+
+What do you think happens?
+
+Let’s find out.
+
+I press Edit, it loads the account details, and here’s the 401(k). You can see various holdings: BND (total bond market), IWM, QQQ (Nasdaq), SPY (S&P 500), and VTI (Vanguard Total Market Index).
+
+These values are real. They’re being calculated based on market data pulled from Polygon, so the server is computing accurate portfolio values.
+
+You can edit positions, remove them, or add new ones. Let’s add a new position—say IBM.
+
+There’s a typeahead search. IBM isn’t in the database yet, but if the system doesn’t recognize it, it automatically adds it. I enter 10 shares, and in they go. For now, the price shows as N/A, which is expected until pricing data updates.
+
+Next, we move to the Advisor Team page.
+
+This is where we see a team of specialist agents that will eventually work together to provide comprehensive analysis. Right now, it prompts us to start our first analysis—but we won’t do that here because this is running locally. The agents themselves aren’t deployed yet.
+
+At this stage, what we’re looking at is the Next.js front end connected to the API layer on the backend. Those pieces are fully in place and working together.
+
+And honestly, it’s sensational—especially when you consider how easy it was to build.
+
+But the real achievement here isn’t just that we used Claude to generate UI code. The real point is that this is a properly designed full-stack application: front end, back end, API layer, database—all running locally and holding together cleanly.
+
+It’s also worth noting that the AI-generated code was excellent not just for the front end, but also for the backend API layer. The boilerplate API routes that query the database were generated flawlessly.
+
+So why is it that LLMs are so good at this part of production apps, but struggled so badly with the agentic Lambda-based system?
+
+The answer is simple.
+
+Front ends and standard API backends are well-trodden ground. There are countless examples in training data. LLMs know how to apply color schemes, frameworks, routing, layouts, and scaffolding. A huge part of front-end difficulty is just volume and structure—and that’s exactly what LLMs excel at.
+
+The same goes for boilerplate backend API code.
+
+But the agentic system we built yesterday was different. That was new territory. We were dealing with tools, structured outputs, OpenAI’s Agents SDK (released only recently), Bedrock integration, and OSS models that didn’t even exist in the model’s training data.
+
+When things went wrong—rate limits, tool calls, orchestration—it got confused, overengineered solutions, and made a mess. There simply weren’t enough examples for it to generalize from.
+
+In fact, that part of the project is a great example of where using Claude actually subtracted value. What would have taken me about a week on my own ended up taking closer to two weeks because of debugging and cleanup.
+
+By contrast, building what you see here—the front end and API—took about a day and a half. That’s it.
+
+If I’d built this myself without AI, I could have done it—but to get it looking like this would have taken at least two weeks, probably more.
+
+So when you do the math end to end, even with its failures, Claude Code still saved me around 60% of the total development time.
+
+That’s a realistic benchmark to keep in mind.
+
+LLMs are phenomenal at scaffolding, dashboards, APIs, and UI-heavy work. The truly hard part—the agentic logic, orchestration, and LLM reasoning—is where you should spend your energy.
+
+That’s the work humans still need to own.
+
+# **Q) Day 3 - Deploying AI-Generated APIs to Production with AWS Lambda & Terraform**
+
+I could honestly stare at this user interface all day.
+
+It’s just so good, and you really should come in and play with it yourself. Add things, subtract things, remove positions, tweak values—make sure everything works the way it should.
+
+For example, I can press Reset All, and up comes this really nice modal:
+“Are you sure you want to delete all your accounts?”
+
+I click Delete All Accounts, and everything is wiped.
+
+And by the way, it wasn’t like that initially. At first, it used one of those dreadful default JavaScript pop-ups. I had to explicitly tell it to build a proper modal instead. So yes, there was tweaking involved—but the key thing is how quickly it responded when I asked for changes.
+
+Now I can repopulate the test data again as a quick sanity check. I press the button, wait a second, and then the data refreshes.
+
+It’s slick.
+So, so, so smooth.
+
+There’s one more thing I want to show you.
+
+You remember that our server is running on localhost:8000. I’m not going to hit any of our custom endpoints directly. Instead, I’m going to go to /docs.
+
+This is something FastAPI provides out of the box, and it’s fantastic. It gives us automatically generated Swagger documentation for our API.
+
+What you’re seeing here is a complete list of API routes—all of them generated by Claude Code for me. You can click into each route, see what it does, view request and response schemas, and even try them out interactively.
+
+It’s amazing.
+
+So now we have full documentation for our backend API, running locally at localhost:8000, and you should absolutely go explore it yourself.
+
+If we jump back into the guide, you’ll see it explains exactly this in step 2.4—how to explore the API documentation by navigating to localhost:8000/docs and clicking around.
+
+We already added test portfolio data, and you can continue testing things: adding new positions, deleting positions, updating cash balances, and generally making sure everything behaves as expected.
+
+But honestly, I can’t wait to move on to deploying this to production.
+
+This is where everything really comes together. We’re now going to take what we’ve built and deploy it properly—running the API as a Lambda service, placing API Gateway in front of it, and deploying the front end just like we did in week two.
+
+In many ways, this is week one and week two coming together.
+
+We’re using Clerk for authentication, the Pages Router for Next.js, and the full AWS deployment architecture from week two. It’s all converging here.
+
+So I hope you’re excited.
+
+Let’s get to it.
+
+Go to step 4.1. We’re going to set up Terraform and deploy everything.
+
+Now it’s time to get Terraform going.
+
+Open the terraform directory and navigate to the seventh folder: 7_frontend. You’ll notice this is the last Terraform folder in the project.
+
+Don’t worry—we will come back and change something later. But for now, this is the final Terraform module.
+
+The first thing to do is take terraform.tf.example and copy it to terraform.tfvars, just like we’ve done before. Right-click, copy, paste, rename.
+
+Then fill in the required values: your AWS region, your Clerk JDBC URL, and the issuer, which should look familiar. You’ll pull these from your local environment or from your original SaaS project.
+
+Once that’s done, your terraform.tfvars should be ready.
+
+Next, it’s time to package up the API Lambda.
+
+Before doing this, make sure you stop the local server that was running earlier. You should exit out of that process.
+
+Now navigate into the backend, then into the API directory.
+
+From there, run:
+
+uv run package_docker
+
+
+This packages the backend API into a clean ZIP file suitable for Lambda deployment.
+
+The instructions say it’ll take about a minute. Honestly, it caught me off guard—it was incredibly fast. That might be because I already had everything installed, but hopefully it’s quick for you too.
+
+Now we’re ready to run Terraform.
+
+Navigate back up to the terraform directory, then into 7_frontend.
+
+You know the drill by now.
+
+Start with:
+
+terraform init
+
+
+This ran almost instantly for me, though it may take a bit longer for you.
+
+Once that’s done, you could optionally run terraform plan if you want to preview what’s going to be created. That’s a good habit in many environments.
+
+But now, we’re going straight to:
+
+terraform apply
+
+
+Terraform asks for confirmation. We type yes, and off it goes.
+
+While it’s creating resources, let’s open main.tf and take a look at what’s being built.
+
+A lot of this should look very familiar from week two. There’s the provider configuration at the top, followed by the S3 bucket for the front end.
+
+Then there’s a fair amount of IAM policy and permission configuration—standard AWS setup.
+
+Next, we see the Lambda function for the API, pointing directly at the ZIP file we just packaged. You’ll notice environment variables being set here, including the Aurora cluster ARN and secret pulled from Terraform state.
+
+CORS origins are configured properly, and then we define the API Gateway, complete with permissions, throttling, and rate limiting. This is extremely important for enterprise-grade deployments.
+
+After that, we configure the CloudFront distribution, tying it to the S3 bucket to serve our static front end globally.
+
+And that’s basically it.
+
+Yes, it’s a lot of infrastructure. And the first time you see this, it can feel overwhelming. But the good news is that most of this is very consistent with what you built in week two.
+
+So much of this should feel familiar now, and you should have a solid understanding of what infrastructure is being created and why.
+
+And while we were walking through all of that…
+
+Terraform finished.
+
+The deployment is complete.
+
+There’s now something we can click on—and the moment of truth is coming next:
+we’re about to find out if it actually works.
+
+# **R) Day 3 - Testing Your Multi-Agent Financial AI System Live in Production**
+
+So here we are, looking at the results of our deployment. The big question at this point is: is this just going to work? We’ve just done a Terraform apply for the first time, and we can see that the CloudFront distribution has been successfully deployed.
+
+I’m going to launch it now and click open—and there we go. This is live on the internet, accessible to everyone through CloudFront. This is our financial advisor application, and this is the landing page. It looks exactly the same as before.
+
+The first thing we see is the sign-in button, so let’s give that a try. I’ll sign in with Google, authorize my Google account, and continue. And just like that, we’re signed in. You can see my avatar at the top—it knows who I am.
+
+Now let’s head over to the dashboard. This is genuinely running out there in production. I’ve already closed my local server; everything you’re seeing now is running via the deployed Lambda APIs and going through API Gateway.
+
+Let’s go to the accounts page. You’ll notice a nice loading pulse while the data is being fetched. I’m going to reset all my accounts and then populate the test data again so we’re creating everything from scratch. There we go.
+
+Now let’s open the brokerage account and edit it. Looks good. I’ll add a position—this time in an old friend, JP Morgan—and give it a quantity of ten. I’ll add the position, and there it is. At this point, none of these positions have prices yet, because the system doesn’t know the current market prices.
+
+Next, we move to the Advisor Team tab, which is the new section. What we want to do here is press the Start new analysis button and see what happens.
+
+As soon as I press it, you’ll notice that something immediately starts happening. This animation appears, indicating activity in the background. What actually happened is that a message was placed onto an SQS queue. That message was picked up by the Financial Planner Lambda service, which spun up and called Amazon Bedrock using Nova Pro. It was armed with three tools and decided to use them.
+
+As a result, three other Lambda services were triggered and began working. These include the Reporter service, which uses Nova to generate written financial and retirement reports; the Chart Specialist service, which uses Nova to generate JSON describing the charts it thinks would be most useful for visualizing the investments; and the Retirement Planner service, which analyzes the portfolio and predicts long-term implications.
+
+Once all of that completed, the application immediately transitioned to the results view. Here we can see the output of the run. We have a portfolio analysis report generated by the Reporter agent, along with retirement projections. Since this is just a test portfolio with a relatively small value, the system correctly flags that it is insufficient to meet the target—which makes complete sense.
+
+These reports were produced by Nova and they look great. The main report also incorporates research that our Researcher agent has been gathering behind the scenes.
+
+Finally, let’s look at the charts. These charts were entirely created by the Charter agent. It decided what information would be most useful to display—such as the top five holdings, account distribution, tax efficiency, asset-class distribution, global distribution, and sector distribution. All of these charts were described in JSON by the Charter agent, and the frontend simply rendered them as provided.
+
+Everything comes together really nicely, and this is the full result of the analysis.
+
+If we go back to the accounts page now, we’ll notice something important. Because the Tagger agent was involved and because we’re using the Polygon API, the prices that were previously showing as “NA” are now populated. If we open the brokerage account again, we can see real share prices for all the instruments, including JP Morgan. These prices come directly from Polygon.
+
+As a result, we now have real valuations for the portfolio and an accurate total value calculated as of right now.
+
+That really wraps up this demo of the product. I hope you’re as impressed as I am by how well everything fits together. It’s important to remember that this has all been running live in production, with multiple AWS services collaborating and many calls to LLMs working together to produce these results.
+
+I’ll be honest—I found this incredibly satisfying, and I hope you did too. That said, there is still one gap. While the animations and results look great, we don’t yet have much visibility into what’s happening behind the scenes while the agents are running.
+
+We know that five agents are communicating, that the Planner agent is making calls across AWS and invoking multiple LLM interactions, but we don’t yet have strong observability into that process. And observability and monitoring are a huge part of delivering AI systems to production. That’s the remaining gap—and it’s something we’ll be addressing tomorrow.
+
+I hope you’ve got a big smile on your face, because today was genuinely fun. It’s incredibly cool to see this production application running on CloudFront. And if you want to take this even further, you’ll remember from earlier weeks that we could easily attach a custom domain and deploy it properly. You’ll also remember that we can add subscription plans so that running the agent analysis is only available to paying users.
+
+Those would be trivial changes, and they would turn this into a real, commercially viable production application. You should absolutely explore that.
+
+But before you do, please take a moment to seriously congratulate yourself. We’ve achieved a huge amount. We’ve made it through two intense days of building the capstone project, and we’re now at the 90% mark.
+
+# **S) Day 4 - Enterprise-Grade AI: Monitoring, Security & Observability at Scale**
+
+If you’re anything like me, you probably absolutely loved yesterday. It was so much fun—seeing everything finally come together, watching the agentic activity in action, and knowing that it was all deployed and running on the cloud.
+
+At the same time, though, you may also have felt a little unsatisfied by the end of it. It was hard to know exactly what was happening behind the scenes. We had to take the UI at its word that everything was working as expected, without really having a clear understanding of what was actually going on. In many ways, it all felt a bit magical.
+
+But magic isn’t what you want when you’re building bulletproof, enterprise-grade production systems. And that is exactly the topic for today. If yesterday was the most fun day of the entire course, then today is perhaps the most important day. This is where everything truly comes together.
+
+Today is about everything it takes to build an agentic application—or a generative AI application—and deploy it to production at enterprise scale. That includes monitoring, security, scalability, and, most importantly, observability. We’ll be looking at Longview dashboards, CloudWatch dashboards, and spending a lot of time understanding what actually happens behind the scenes, so that we have a strong handle on our production deployment.
+
+By this point, I probably don’t need to remind you what Alex is—our SaaS financial planner. We’ve already done a huge amount of work. Last week, we built the researcher and the data ingestion pipelines using SageMaker. This week, we built the database infrastructure and implemented our five agents. Then yesterday, we built the frontend, wired it up through the API layer, ran the system end to end, and saw everything working together.
+
+What remains now is the big task: making all of this truly enterprise-grade.
+
+Before we do that, let’s remind ourselves of the architecture we’ve built. Here’s the diagram that shows all of the components and services we’ve deployed. I’ve added one more element to it—the API Gateway—as a separate component. There’s no strict rule about what counts as a separate box in an architecture diagram, but I feel the API Gateway is important enough to highlight, especially in a production context where concerns like throttling matter a lot.
+
+This diagram represents the overall setup we’ve built. I’ve once again added dotted lines around the blue boxes to emphasize that these are separate Lambda deployments. Everything is not running inside a single Lambda function talking to itself; each piece is deployed as its own endpoint. I know I’ve probably said that many times already, but it’s an important point.
+
+At first glance, this architecture already looks impressive. But it’s actually more than that. When we layer in what we built last week as well, this is the real architecture. This is what’s truly happening behind the scenes.
+
+If I had shown you this full picture at the very beginning of the course, you might have thought, “There’s no way I’m doing this—this is far too much.” But because we built it gradually, step by step, I hope that when you see it now, your reaction is more like, “Okay, yes—I understand this.”
+
+This is the real story. These are the AWS services that are actually running. And even this is still a high-level view. There are many other services and smaller components that aren’t shown here, but these are the main building blocks of our architecture.
+
+As this system runs on AWS, there’s a huge amount happening. There’s a lot of infrastructure involved, all of it provisioned using Terraform. This is a good moment to pause and reflect on what it would have taken to build all of this manually through the AWS Console. If we hadn’t used Terraform, you would have hated the process—and probably hated me as well. There’s no way I’d be asking for good course ratings if we had done it that way.
+
+Terraform is a complete game changer. Being able to run Terraform applies and construct this entire setup programmatically made an enormous difference.
+
+So now that all of this is running, what we want to do today is gain real visibility and control. We want a clear perspective on what’s happening, and we want to be able to operate this system like an MLOps engineer or a production AI engineer—someone who can confidently run this in production and understand its behavior.
+
+To do that, we’ll focus on six key categories that define what it means to be enterprise-grade. The first is scalability. With systems like this, scalability means being able to scale up quickly to meet sudden demand. If your application goes viral and a lot of users arrive at once, the system needs to scale horizontally—adding more services without downtime or manual hardware provisioning.
+
+At the same time, especially in startup environments, scaling down is just as important. During off periods, such as weekends, you don’t want to pay for large amounts of unused infrastructure. A serverless architecture gives you both the ability to scale up rapidly and scale down efficiently.
+
+Security is another major category. This is a vast topic in its own right, spanning cybersecurity and information security as entire professions. With agentic systems, there are some particularly important security considerations, along with general cloud security best practices. We’ll cover the most relevant ones today.
+
+Monitoring is also essential. We need good insight into what’s happening in production. We need visibility into system behavior and alerts when things go wrong. Having the right tooling to track and understand what’s happening is critical, and we’ll spend time on that as well.
+
+Guardrails are more specific to the LLM context. These are the checks and controls you put in place around what goes into your LLMs and what comes out of them. Many people rightly have concerns about relying too heavily on LLMs because they are inherently unreliable. That’s true—but they’re unreliable in the same way that any statistical model is unreliable.
+
+The real problem arises when people treat agents as if they are human-like reasoning systems that can be trusted. They are not. They are token predictors—statistical systems that predict the next token. Keeping that firmly in mind helps avoid many issues.
+
+This means you shouldn’t “trust” LLM outputs in a human sense. Even the word trust gives them too much agency. Instead, you should write robust production code that validates outputs, enforces boundaries, and applies strict checks—just as you would with any other statistical model. You wouldn’t connect a trading model directly to a live trading engine without safeguards, and LLMs and agents should be treated the same way.
+
+In enterprise systems, both agent inputs and outputs are validated. Some validation may involve calling other LLMs, but ultimately it should be enforced through deterministic code—conditions, rules, controls, and tests. We’ll look at examples of these guardrails today.
+
+Then there’s explainability. A few years ago, this was a major focus because deep neural networks are difficult to interpret and are often described as black boxes. Today, explainability is considered less of a pressing issue, provided a few important rules are followed. I’ll walk you through those shortly.
+
+Finally, there’s observability—and this is really the punchline for today. Observability is about going beyond monitoring and gaining deep insight into system behavior. It’s about understanding why things are happening, not just that they are happening.
+
+# **T) Day 4 - Enterprise-Grade AI: Scaling, Security, and Monitoring for Production**
+
+Here we are back in Cursor, working again in the Alex repository project. From here, we navigate into the guides section and open the final Enterprise Guide in preview mode. This guide is where we evaluate what it really means for this system to be enterprise-grade, as documented in the README.
+
+The plan is to walk through six different enterprise categories. Some of these will be more hands-on exercises, where you explore the Terraform code and the AWS Console yourself to understand how things are configured and why certain best practices matter. For a few of the categories, we’ll go much deeper together. We’ll start with the simpler concepts and gradually move toward the more interesting and advanced ones. The six areas we’ll cover are scalability, security, monitoring, guarding, explainability, and observability. We begin with the most obvious one: scalability.
+
+Scalability is largely baked into this architecture because it is serverless. The system is elastic by default—it automatically scales up when demand increases and scales down when demand drops. If this were built using traditional Amazon EC2 instances, that would not be the case. You would need to manually provision and manage individual servers, which is the classic server-based infrastructure model.
+
+If you were using services like App Runner, you would still benefit from a serverless and scalable setup, although the configuration model is slightly different. Similarly, if you were using ECS or EKS for container orchestration, the system would be horizontally scalable, though often with minimum capacity constraints. These approaches are more “industrial-strength” solutions. In this project, AWS Lambda works especially well for an agentic architecture. When you have multiple agents and one suddenly becomes heavily used, Lambda can easily spin up many instances of that agent to meet demand.
+
+Each major component in the system supports scalability. Lambda functions scale automatically. Aurora Serverless v2 automatically scales database capacity. API Gateway is designed to handle a large number of requests and includes features like throttling and burst handling. These capabilities help ensure the system can scale while also protecting against certain security risks. Additionally, Amazon SQS provides effectively unlimited throughput by allowing messages to queue up as needed. If required, its capacity can be increased further to support higher scale.
+
+At this point, the recommendation is for you to explore these capabilities yourself. Go into the Terraform directory, specifically into 5_database, and inspect main.tf. You’ll find examples of how you could increase database capacity if needed. Do the same for the agent configurations—look at how you could increase memory allocation for the planner agents or allow higher concurrency. This hands-on exploration is an important exercise to understand how scalability can be dialed up or down.
+
+In a real-world scenario, you would also perform volume or load testing to validate scalability. This typically involves running scripts that generate large numbers of API requests to see how the system responds under stress. This kind of testing goes beyond AI work and into core platform operations, so it isn’t demonstrated here. However, examples are provided for how you could run such tests on macOS, Linux, or Windows.
+
+When scaling a system, cost awareness is critical. One reason to impose limits on scaling is to prevent runaway processes that could cause costs to spiral out of control. For this reason, billing and cost alerts should always be configured. These alerts notify you if spending exceeds expected thresholds. In addition, the system uses CloudFront, which caches assets at edge locations around the world. Performance can be further improved by configuring longer cache expiration times, and you can explore CloudFront settings if you want to optimize this further.
+
+That concludes scalability. The core ideas should be clear, and the more interesting topics are coming next.
+
+Moving on to information security, the system already follows many best practices. One of the foundational principles is IAM least-privilege access, which means granting only the minimum permissions required for each user, service, or process. In AWS, even Lambda functions require explicit permissions. Throughout the Terraform configuration, care has been taken to ensure that each Lambda function has only the permissions it needs to perform its role. This minimizes potential damage if something goes wrong or is misused.
+
+One area where best practices were relaxed is the IAM user used during development. Broad permissions such as full S3 access were granted for convenience, which is common in educational or experimental projects. In a production environment, this would not be acceptable. Instead, each team member would have role-based permissions tailored to their responsibilities, and access would be separated across development, testing, staging, and production environments.
+
+For authentication, the application uses industry-standard credential management with JSON Web Tokens (JWT). Tokens expire every hour, and a dedicated endpoint allows Clerk to rotate keys. Every API request validates the user’s identity, resulting in a robust and secure authentication mechanism.
+
+API Gateway acts as the entry point to the backend and provides additional protection through request throttling. This helps defend against distributed denial-of-service (DDoS) attacks, where attackers attempt to overwhelm the system with massive traffic from multiple sources. There are more advanced protections available through AWS that were not enabled here because they come at an additional cost.
+
+CORS (Cross-Origin Resource Sharing) is also enforced to ensure that only requests originating from the CloudFront-served frontend can reach the Lambda APIs. This prevents attackers from creating their own frontend and bypassing controls to call the backend directly. This origin validation is an important security best practice.
+
+Another key protection is against cross-site scripting (XSS) attacks. These attacks attempt to inject malicious JavaScript into web pages to impersonate the frontend in a user’s browser. Security policies are in place to define what scripts are trusted and prevent unauthorized scripts from executing.
+
+Secrets management is handled responsibly as well. Secrets are never hardcoded. Environment variables are used, and in several cases AWS Secrets Manager is employed. Although Secrets Manager incurs a small cost per secret, it provides a secure and centralized way to manage sensitive values. For example, Aurora database credentials are stored there, and you can verify this by checking the Secrets Manager console. While not every secret uses Secrets Manager, it is used in several important places, and it could be extended further if desired.
+
+There are also several advanced security features that were intentionally not enabled due to cost considerations. These include AWS Web Application Firewall (WAF) for filtering malicious web traffic, VPC endpoints to keep service-to-service traffic entirely within AWS, and GuardDuty, which continuously monitors for suspicious activity. These are common in enterprise environments and can be enabled via Terraform or the AWS Console if needed.
+
+Finally, it’s considered good practice to implement validation checks that ensure Lambda functions are always configured as expected and raise errors when they are not. This adds another layer of security and reliability.
+
+That wraps up security. Much of this may already be familiar, but it’s important to see how it all fits together in a real system. Next, we move into monitoring, followed by the even more interesting areas of observability.
+
+# **U) Day 4 - Monitoring AI Agents in Production with CloudWatch and Dashboards**
+
+This is where we really start to gain insight into what is happening on our servers, and that insight comes through logging. You’re likely already familiar with basic Python logging—importing the logging module, creating a logger with logging.getLogger, and using methods like logger.info, logger.error, and so on. Throughout the application, logging has already been added in many places, especially across the different agents.
+
+Your assignment here is to add even more logging. Go into the code and insert additional log messages of your own. It’s especially satisfying to see messages that you personally added appear in the logs. Pick something that interests you—perhaps a part of the workflow you’re curious about—and add logging there so you can better understand what’s happening behind the scenes. You can keep it simple with logger.info, or, if you want to be a bit more structured, you can include additional context and metadata in the log messages. That structure isn’t required, but it can be helpful.
+
+Once you’ve added your logging, the next step is to kick off a run of the application and then inspect the logs. To do this, we first need to find where the application is running. Open a new terminal, navigate into the Terraform directory, then go into folder seven, which contains the frontend. From there, run terraform output. This command displays the values of your Terraform outputs, including the CloudFront URL. Unless you built a separate frontend yourself, this URL is how you access the application.
+
+Opening the CloudFront URL brings up the application interface. You can navigate through it—look at the portfolio, dashboard, or accounts—and then go into the advisor team section. From there, kick off a new analysis. Once the analysis starts running, multiple agents begin communicating with each other, and work is happening across the system. That means logs should now be generated.
+
+Next, we go into AWS and open CloudWatch. Inside CloudWatch, we navigate to Log Groups. You’ll notice several log groups related to the Alex project. If we open the planner log group, we can see that the Alex Planner Lambda has been running recently. Opening the most recent logs shows activity corresponding to the analysis we just triggered.
+
+At the top of the log stream, we can see the planner Lambda starting execution and beginning orchestration. Initially, it checks for instruments missing allocation data, but reports that all instruments already have allocation data, so there’s no need to invoke the tagger. The next step is updating instrument prices using market data. To do this, it fetches current prices by calling Polygon.io and retrieves prices for 16 symbols.
+
+As the planner fetches prices, log messages appear continuously. If you’re using a paid Polygon plan, frequent calls are fine. If you’re on the free plan, caching ensures things still work smoothly. Once price updates are complete, the planner performs a chat completion using the Nova Pro model, and logs confirm the model name being used.
+
+After that, the planner begins calling other Lambda functions. It invokes agents such as the reporter, charter, and retirement agents. These log messages confirm that tool calling is working correctly and that the planner is dispatching work to other serverless processes. Eventually, the planner job completes successfully, and the logs show the total execution duration, memory usage, and other runtime metrics.
+
+These logs give us a clear, detailed view of everything happening behind the scenes. They prove that the application isn’t just presenting a nice UI—real work is happening, agents are being invoked, and AWS services are actively running the workflow.
+
+At this point, you might still be skeptical. The planner logs say that other agents are being called, but how do we know that actually happened? To prove it, we can cross-check timestamps. For example, the planner logs indicate that it invoked the reporter agent around 19:15. Remember that timestamp.
+
+Now we go back to CloudWatch log groups and open the Alex Reporter log group. Sure enough, there is a log entry at 19:15. Opening it shows that the reporter Lambda was triggered and began execution exactly when the planner claimed it would.
+
+Inside the reporter logs, we can see the reporter doing its work. One important step is fetching market insights. This happens when the reporter looks up vector data stored in S3—data that was previously written by the researcher agent, which runs every two hours. This demonstrates how agents communicate indirectly through shared data stores. The reporter then processes this information and posts results back to the database.
+
+Seeing this end-to-end flow confirms that the agents really are communicating with each other through different Lambda functions. Everything is happening behind the scenes on AWS, and that’s why the frontend is able to display such rich results—the agents are genuinely working together in real time.
+
+The final piece to look at is CloudWatch dashboards. AWS allows you to create dashboards that summarize metrics across services. While these dashboards can be created manually through the AWS Console, we now use Terraform to define them as code.
+
+A Terraform script has been created in the 8_enterprise directory. Earlier, it might have seemed like folder seven was the last step, but this eighth folder adds enterprise-level monitoring. To set it up, open a terminal, navigate to the Terraform directory, and then into 8_enterprise. As usual, copy the Terraform example file, create your own terraform.tfvars, and enter values such as the AWS region and the Bedrock model ID.
+
+Once that’s done, run terraform init followed by terraform apply. The dashboards are created almost instantly. Two dashboards are generated, and both are worth exploring.
+
+The first dashboard focuses on AI model usage. Opening it shows metrics related to Amazon Bedrock, including the number of model invocations, token usage, and latency. By adjusting the time range—12 hours, one day, or several days—you can see historical usage patterns. The dashboard also includes SageMaker metrics, reflecting activity from the researcher agent, which runs every two hours, as well as additional SageMaker usage triggered during application runs.
+
+Latency metrics are displayed in microseconds, giving a clear view of performance. Together, these charts provide a unified view of how Bedrock and SageMaker are being used across the system. This is exactly the kind of dashboard an MLOps engineer would monitor continuously to ensure production usage remains healthy and predictable.
+
+The second dashboard focuses on agent performance. It shows agent execution times, error rates, invocation counts, concurrency, and throttling. The absence of throttling is a good sign. Execution times are visualized in milliseconds, and each data point is color-coded by agent—planner, reporter, charter, retirement, and tagger.
+
+From this view, it’s clear that the planner agent typically takes the longest to execute, which makes sense given its orchestration role. The dashboard also makes it easy to spot anomalies, such as spikes in errors. For example, an error spike in the reporter agent can prompt further investigation. This is exactly how production issues are identified and debugged in real systems.
+
+These dashboards were built entirely through Terraform, and the code is available for you to inspect. You can use it as a template to create additional dashboards tailored to your own needs. Together, they provide a powerful, visual way to monitor everything happening in production and gain confidence that the system is behaving as expected.
+
+# **V) Day 4 - Monitoring AI Systems and Building Guardrails for Production Agents**
+
+One of the particularly robust aspects of our architecture is the use of Amazon SQS (Simple Queue Service) to queue requests for our agents. This gives us clear visibility into the different messages that are being created, dispatched, and processed by the system. SQS also provides a dead-letter queue (DLQ), which captures messages that fail processing multiple times and require investigation.
+
+If we go into the AWS Console and open SQS, we can see this in action. There are two queues configured: Alex analysis jobs and Alex analysis jobs DLQ. When we open the main analysis jobs queue and navigate to the Monitoring tab, we can view activity over the last three days. The charts show messages sent, received, and processed, giving us a clear picture of how work is flowing through the system.
+
+Next, if we open the dead-letter queue and check its monitoring data, we can see whether any messages have failed. In this case, it’s reassuring to see that nothing has failed over the last three days, which indicates the system is operating smoothly. This kind of monitoring is critical when using queues to dispatch tasks to agents, as it helps ensure reliability and makes failures visible when they occur.
+
+Another important monitoring capability comes from CloudWatch alarms. If we navigate back to CloudWatch and open the Alarms section, we can see whether any alarms are currently active. From here, we can also create new alarms by selecting a metric, defining a threshold, and configuring notifications. For example, you can set it up so that if error rates spike or latency exceeds a certain level, you receive an email alert.
+
+This is classic production monitoring—the kind that ensures your phone goes off in the middle of the night so you can respond quickly if something goes wrong. CloudWatch alarms are a key part of running a reliable agent platform in production.
+
+The final part of the monitoring discussion is billing and cost management. To view cost data, you must log in as the AWS root user, since IAM users typically don’t have access to billing. From there, you can open the Billing and Cost Management dashboard. In this case, September’s costs are more manageable than August’s, although experimentation and investigations can still drive costs up.
+
+Ideally, you are carefully monitoring your own costs and not running expensive components—such as the researcher agent—unnecessarily every couple of hours. If you have done that, at least you’ve benefited from the additional insights it provides. Regardless, it’s crucial to set up billing alerts and regularly review cost data to ensure spending stays under control.
+
+With monitoring covered, we now move on to a completely different topic: guardrails. Guardrails are protective controls designed specifically for AI systems. Some frameworks, such as the OpenAI Agents SDK, include built-in guardrail systems for both input and output validation.
+
+However, when building enterprise systems, it’s often best to start simple. Rather than relying immediately on sophisticated framework-level guardrails, it’s a good practice to think of guardrails as plain Python code—logic that runs before calling an agent and after receiving its response. This code checks whether inputs and outputs conform to expectations and policies. While advanced guardrails can be layered in later, simplicity is usually the best starting point.
+
+One example of an output guardrail would be validating the response format. For instance, in the Charter Agent, you could enforce that the output must be valid JSON. You could also check whether the output includes certain required charts, and if it doesn’t, you could fail the response and suppress all charts entirely. This kind of validation protects downstream systems and ensures predictable outputs from your agents.
+
+Input guardrails are equally important. One of the most common concerns in AI systems is prompt injection, where a user attempts to override or manipulate system instructions by crafting malicious inputs—phrases like “ignore previous instructions” or attempts to coerce harmful behavior. A simple guardrail might scan inputs for suspicious or dangerous patterns and fail early if they are detected.
+
+You might initially think this doesn’t apply here because agents don’t appear to take direct user prompts. However, that assumption deserves deeper thought, and it’s something worth revisiting later. As a general practice, implementing basic input validation is strongly recommended.
+
+Another valuable guardrail relates to token usage. If something goes wrong and an agent begins producing excessively long outputs, you need a mechanism to truncate or stop it. This is especially important when outputs from one agent become inputs to another, as unchecked growth can quickly lead to high costs.
+
+Across the platform, another guardrail already in use is exponential backoff. This is implemented using a library such as Tenacity (or alternatives like Backoff). With this approach, functions are decorated so that if certain errors occur—such as rate limits or timeouts—the system waits briefly and retries, increasing the wait time with each attempt. This retry logic significantly improves reliability, especially when interacting with external services that frequently enforce rate limits.
+
+You can find this retry logic used throughout the agent codebase. It’s a simple but powerful way to make your agent infrastructure more robust and production-ready.
+
+We’ll return to guardrails later, as we’ll be implementing another type in the observability section. Before that, it’s worth spending some time on explainability.
+
+Explainability used to be one of the most hotly debated topics in machine learning, especially with deep neural networks. Unlike simple models such as linear regression—where it’s easy to see how weighted features lead to a prediction—deep learning models involve billions of parameters, making it very difficult to understand why a particular decision was made. This posed serious challenges in areas like credit scoring or risk assessment.
+
+Modern large language models have helped alleviate some of this challenge. Because LLMs are fundamentally generative, they can be prompted to explain their reasoning. This makes explainability a key part of prompt engineering and context engineering today.
+
+One common approach is to ask the model to explain its reasoning or provide a chain-of-thought. Instead of simply producing an answer, the model walks through its logic step by step. Structured outputs can reinforce this by forcing the model to present reasoning, evidence, and conclusions in a predictable format. We already use this technique in parts of the system, such as the tagger.
+
+Transparency in prompt design is also important. By understanding and refining prompts, you gain better insight into why certain outputs are produced. However, there is an important trap to be aware of when asking models to explain themselves.
+
+If a model generates an answer first and is then asked to explain it, it may simply invent a plausible rationale after the fact. Because LLMs generate text token by token, they can convincingly justify incorrect or illogical answers. You can even demonstrate this by forcing a model to explain something blatantly wrong—it will often produce a persuasive explanation anyway.
+
+The solution is simple but crucial: reverse the order. Always have the model explain its reasoning before producing the final answer. This forces it to form a coherent rationale first, making the final answer more consistent with the explanation. While this isn’t a perfect solution and has exceptions, it’s an excellent rule of thumb.
+
+As an exercise, you could apply this to the tagger agent by requiring it to provide a rationale before outputting its classification. The same approach can be applied to portfolio recommendations. Although this may feel like an oversimplification to experienced practitioners, it remains a highly effective practice in many real-world systems.
+
+Finally, another best practice is to keep a record of AI decisions—logging them in some form so they can be reviewed later. We’ll explore a slightly different approach to this shortly.
+
+With that, we arrive at the final and most interesting section: observability.
+
+# **W) Day 4 - Advanced LLM Observability with Langfuse and Production Guardrails**
+
+Observability has emerged as an entirely new discipline in the context of monitoring agent-based systems. You can think of it as monitoring on steroids. Rather than just checking whether something is up or down, observability gives you deep, fine-grained insight into everything happening inside your agent workflows in production.
+
+It allows you to monitor model performance, latency, failure patterns, model drift, cost behavior, and the overall health of your agents. Instead of guessing what went wrong, observability helps you understand why it went wrong and where it happened.
+
+We’ve already seen a basic form of observability through the OpenAI Traces application, which functions as a lightweight observability platform. However, there are more advanced and feature-rich platforms available. One of the most popular is Langfuse. There are several alternatives in this space—some of you may already be familiar with tools like MLflow—but Langfuse stands out for its popularity, capabilities, and ease of use.
+
+Langfuse is an open-source engineering platform designed specifically for LLM and agent observability. To get started, you should sign up for an account. If you don’t already have one, click the Sign Up button, create an organization (you can keep all default settings), and make sure to select the free plan. After that, create a project—this could be named something like Alex Financial Planner, or anything you prefer.
+
+Once the project is created, you’ll land on the Langfuse home screen. At this point, it’s best to explore the UI yourself, as you’ll immediately see the kinds of insights Langfuse provides.
+
+Next, navigate to Settings → API Keys. Langfuse provides three critical values:
+
+A public key (starts with PK)
+
+A secret key (starts with SK)
+
+A host URL
+
+Be careful here—the UI may list the keys in an order that can be confusing. Always double-check that the public key starts with PK and the secret key starts with SK.
+
+With these values in hand, go back to your Terraform directory for the “number six agents” project. Open your actual Terraform variables file (not the example file). Near the end of the file, you’ll find several Langfuse-related variables that were previously commented out. Uncomment them and populate:
+
+The Langfuse public key
+
+The Langfuse secret key
+
+The Langfuse host
+
+One additional requirement here may seem surprising: you also need an OpenAI API key.
+
+Even though we are not using OpenAI models—and are instead using Bedrock with Nova models—we are still relying on the OpenAI Agents SDK for tracing. That SDK acts as a pass-through, sending trace data onward to Langfuse. For this reason, an OpenAI API key is required.
+
+The good news is that this costs nothing. You can create an OpenAI account for free, generate an API key, and use it without adding any billing balance. The key is only used for observability and tracing, not for model inference.
+
+Once all of these keys are configured in Terraform, deploy the changes. After that, the observability code that was previously dormant will become active.
+
+At this point, it’s worth looking at what has been set up behind the scenes. If you explore the backend and inspect the individual agent folders—such as the planner agent—you’ll notice a module named observability in each one. This module initializes Langfuse observability, but only if the Langfuse secret key is present in the environment variables. Until now, that code path was intentionally inactive.
+
+With the keys configured, the system now uses the OpenAI Agents SDK as a tracing layer, which forwards trace data to Langfuse. The OpenAI Agents SDK documentation describes this integration, but the setup is somewhat involved.
+
+To make this work, we use Logfire, an open-source logging library from Pydantic AI. Logfire acts as the bridge that sends trace and observability data to Langfuse. There is some unavoidable setup complexity here, but the important point is that this code is reusable and already works as intended.
+
+When you inspect the Lambda handler, you’ll see that tracing is already enabled using trace_planner_orchestrator, which automatically logs execution details to OpenAI Traces. On top of that, anything wrapped with with observe: is automatically captured and sent to Langfuse.
+
+By simply importing and using this observe context manager, Langfuse is configured and activated behind the scenes. This abstraction significantly simplifies observability instrumentation across the codebase.
+
+There is, however, one slightly hacky detail worth explaining. At the end of the Lambda execution path, you’ll notice a time.sleep. Normally, sleeping in production code—especially inside a Lambda—is discouraged. In this case, it serves a specific purpose.
+
+AWS Lambda shuts down execution environments abruptly once the handler completes. Observability frameworks, however, often flush logs asynchronously in background threads. Without a brief delay, Lambda can terminate the process before those logs are fully sent.
+
+Although libraries provide flush and shutdown hooks, they proved unreliable on their own in this scenario. Adding a short sleep at the very end—inside a finally block—ensures that all observability data is successfully transmitted. This delay only applies when Langfuse is enabled, and it slightly extends Lambda execution time purely to guarantee trace completeness.
+
+While this approach is not elegant, it is effective and localized. You can safely ignore it otherwise.
+
+Now, this observability setup enabled something much more interesting: agent-level evaluation as a guardrail.
+
+For this, one agent was selected—the reporter agent, since it is one of the most critical components in the system. A lightweight module called judge was introduced. This module was implemented manually rather than generated, as handcrafted logic is often more reliable for backend validation.
+
+The judge is a simple LLM call with structured outputs. It returns an Evaluation object defined using a Pydantic model. This object contains:
+
+Feedback: qualitative reasoning
+
+Score: a numeric rating from 0 to 100
+
+Crucially, the model is instructed to produce its feedback and rationale before assigning the score. This enforces explainability and avoids post-hoc rationalization. When you see a score, you also see why that score was given.
+
+The main evaluation function receives:
+
+The original instructions
+
+The task description
+
+The output produced by the agent
+
+The judge is prompted as an evaluation agent responsible for assessing the quality of a financial report produced by a financial planning agent. It evaluates the output against the original instructions and task and returns a structured evaluation object.
+
+This is a clean, reliable way to implement an internal “judge” that can critique agent outputs, provide transparent feedback, and quantify quality—all while remaining fully explainable.
+
+Now that this judge exists, the next step is to see how it is actually used in the system.
+
+# **X) Day 4 - LLM-as-a-Judge Pattern with Langfuse Observability in Production**
+
+As you might realize from the name judge, this is a classic example of the “LLM as a Judge” pattern, where one model evaluates the performance of another model. In this case, the reporter agent’s output is assessed by a separate evaluation function before it reaches the user.
+
+The Lambda handler for the reporter agent serves as the main entry point. Here, you’ll notice the Tenacity retry mechanism, which automatically retries execution if a rate-limit error occurs. This is a best practice in production systems to ensure reliability despite transient failures. The reporter agent runs normally and produces its final output. However, when observability mode is enabled, an additional step is executed: a span titled “judge” is created, and the evaluate function is called. This function receives three inputs: the original instructions sent to the reporter, the task it was asked to perform, and the output it generated.
+
+The judge returns both structured feedback and a score from 0 to 100. The score is then divided by 100 to normalize it between 0 and 1. This normalized score is registered in Langfuse using a score-tracking command, which allows us to monitor it over time. In addition, an observability event is created to log that the judging step occurred.
+
+A guardrail ensures that low-quality outputs do not reach users. The system defines a minimum acceptable score of 0.3 (30%). If the judge assigns a score below this threshold, the reporter agent’s output is discarded, an error is logged, and a safe fallback message is returned to the user: “I’m sorry, I’m not able to generate a report for you. Please try again later.” This mechanism prevents unreliable or low-quality reports from being delivered.
+
+Additional observability events are logged to provide further visibility. Events such as “Reporter started” and “Reporter about to run” are recorded, along with metadata like the job ID and Clerk user ID. These extra messages allow tracking of the agent’s execution lifecycle and enrich Langfuse’s observability data.
+
+Once all code changes are made—observability, judge logic, guardrails, and events—a Terraform apply must be executed. Because the environment variables for Langfuse credentials and observability were updated, AWS only becomes aware of these changes once Terraform deploys them. The nice part of the setup is that only the affected agent folder needs updating. Running terraform apply in that folder immediately rolls out the environment variable changes.
+
+After deployment, the Alex front end can be used to initiate a run. Although there may be minor UI bugs, such as “Last analysis: Never” displaying incorrectly, the system functions correctly in the backend. The advisor team can kick off a new analysis, and the agents begin executing. Due to the added time.sleep hack for proper observability flushing, the run takes slightly longer—roughly 25 seconds longer in total across all agents—but the execution completes successfully.
+
+The results of the run include a summary, retirement projections, and various charts. With the front-end output confirmed, attention shifts to Langfuse, where observability provides deep insight into agent activity. The home screen shows traces from the retirement agent, charter agent, planner orchestrator, and reporter agent. Traces are displayed over time, though model costs appear as zero because Bedrock and AWS model usage is not reported to Langfuse.
+
+The Tracing section is where the detailed analysis occurs. Each row represents a different trace, corresponding to an agent execution or event. The hard-coded events, such as reporter lifecycle events, are interspersed among these traces.
+
+Clicking into a trace, such as the charter agent, reveals full metadata including tokens in/out, model used, input prompts, and structured outputs (for example, JSON charts). The retirement agent shows similar data, allowing inspection of inputs, outputs, and internal agent conversation flow.
+
+The planner orchestrator trace shows the orchestrator starting, invoking the reporter, charter, and retirement agents as tool calls, and then completing. This demonstrates parallel execution, and turning on the timeline view allows visualization of when each agent started and finished relative to the others. The planner orchestrator triggers three downstream agents simultaneously, which complete independently before the workflow finishes.
+
+The reporter agent trace demonstrates the judge flow. The reporter generates a financial report, invokes the judge agent, and receives structured feedback and a score. Both the score and a judge event are registered in Langfuse. In this run, the judge assigned a score of 85.85%, noting that the report was comprehensive and well-structured, though it lacked sufficient market context from the “Get Market Insights” tool. Despite this minor critique, the score easily surpasses the 30% guardrail threshold, allowing the output to be delivered to the user.
+
+This walkthrough illustrates how observability, LLM-as-a-judge, structured scoring, and guardrails work together in a production agentic system. Langfuse provides additional features, including configurable LM judges, annotations, datasets, and long-term score tracking. Running multiple executions and exploring traces, events, and timelines allows deep visibility into agent interactions, decision-making, and system behavior, providing explainable, enterprise-grade insights into the flow of agents in production.
+
+# **Y) Day 4 - Real-Time Agent Monitoring and the Security Risks of Production AI**
+
+After all that time spent digging through traces, spans, and agent conversations, you might reasonably hope that Langfuse brought you some joy—and maybe even made you feel like a true MLOps practitioner for a moment. With that, the observability section is essentially wrapped up, especially if you spent some quality time exploring it.
+
+There is, however, one last small but fun nugget to show. In the backend directory, there’s a script called Watch Agents. If you navigate to the backend directory and run watch agents, this script uses the AWS CLI to stream log information directly from CloudWatch. This is more about monitoring than observability in the strict sense, but it looks cool—which is why it’s saved for the very end.
+
+When you first run it, it might not look particularly exciting. At a glance, it can seem a bit dull. But things get more interesting once you head back to the dashboard, go to the advisor team, and kick off a new analysis—say, to understand what’s happening with your investments. As soon as the analysis starts, you’ll notice activity in the terminal. The script is continuously tailing CloudWatch logs and printing log output from each agent in real time, using different colors for each one.
+
+If you scroll back up, you can see the full lifecycle unfolding. At the very top, the system checks the observability configuration and confirms that Langfuse has been set up successfully. From there, the planner begins execution, market prices are fetched from Polygon.io, and the reporting process starts. You can clearly see when the planner invokes the reporter, charter, and retirement agents, and how each of them runs independently.
+
+You may notice a small error appear in the logs. This relates to some earlier Langfuse tracking code that attempted to capture a specific variable. At the moment, the way Langfuse integrates with the OpenAI Agents SDK doesn’t support this particular pattern. Ideally, this will be fixed in the future, and by the time you run this yourself, the error may no longer appear. Importantly, the error has no impact on execution—the agents continue running normally.
+
+As the run progresses, you’ll see the charter agent complete and emit its JSON output for charts. The retirement agent follows, producing its results, then waits briefly at the end. Control returns to the planner, which performs its final 15-second wait to ensure all observability data is fully flushed. This deliberate delay is a small hack to guarantee that every trace, event, and metric is captured correctly before execution finishes.
+
+Once the planner completes, it records its duration and memory usage, and the full workflow ends. Switching back to the front-end UI, you can see the results rendered correctly: the overview, retirement projections, and charts that were previously visible only in the logs.
+
+There’s a lot happening here, and it can be hard to follow every detail in real time. But that’s part of the appeal. Watching the colored log output from different agents as they execute gives you a visceral sense of how the system flows in production. This script provides yet another lens into system behavior—still backed by CloudWatch, but presented in a more dynamic and intuitive way.
+
+With that, the day comes to a close. The goal was to deliver something substantive: not just explanations, but live demonstrations of monitoring and observability, both through Langfuse and through raw log streaming. And, of course, it wouldn’t be complete without agents logging in different colors—that’s just how this story ends.
+
+Earlier, security discussions focused on traditional cloud security topics such as IAM permissions, JWTs, and access control. But there’s another side of security that becomes especially important with agentic AI. As agents gain new capabilities—particularly through the rapid adoption of MCP servers—new classes of security risks emerge that are worth examining.
+
+Running an MCP server isn’t fundamentally different from installing and running any open-source package. You’re granting an agent access to additional functionality, and that functionality must be trusted and well understood. The difference is that MCP servers are extremely easy to attach to models like Claude, even for users who may not fully understand what the server does. This lowers the barrier to running third-party code and makes education and trust in MCP authors critically important.
+
+Beyond that general concern, there is a deeper security issue worth exploring. Simon Willison—well known for his insightful writing on LLMs—has examined this problem closely, particularly in light of recent incidents involving MCP servers such as those for Supabase and GitHub. His insight is that serious security risks emerge when an agent possesses three specific capabilities at the same time.
+
+He refers to these as the “lethal trifecta.” The first is access to private data. Many agents, including Alex, clearly satisfy this condition, as they can access sensitive user information such as private investment portfolios.
+
+The second capability is access to untrusted content. This means the agent can receive prompts or inputs that were not authored by the system developers—typically direct user input. If users can influence the prompts sent to the agent, this condition is met.
+
+The third capability is the ability to communicate externally—for example, sending data to third-party services or APIs. When an agent can exfiltrate information outside the system, this completes the trifecta.
+
+According to Simon’s analysis, having one or even two of these capabilities is not necessarily dangerous in a new way. But when all three are present simultaneously, new and serious security vulnerabilities can arise. Several real-world incidents, including vulnerabilities in GitHub MCP servers, demonstrate how these conditions can combine to create unexpected and exploitable behavior.
+
+The important question, then—and one worth keeping in mind—is whether systems like Alex exhibit all three traits at once, and if so, how those risks are mitigated. Understanding and reasoning about this trifecta is becoming an essential part of building secure, production-ready agentic systems.
+
+# **Z) Day 4 - Securing AI Agents Against Prompt Injection in Production Systems**
+
+The GitHub MCP server vulnerability is a particularly instructive example of how new security risks can emerge in agent-based systems.
+
+GitHub provided an MCP server that could access repositories using a developer’s access token. In many cases, developers granted this MCP server access to all repositories their token allowed—both public and private. One of the supported workflows was to ask the MCP server to review GitHub issues and begin working on them automatically. On the surface, this seemed harmless and even helpful.
+
+The problem arose because anyone on the internet can post issues to a public repository. Researchers discovered that an attacker could submit a carefully crafted GitHub issue containing a prompt injection. The injected prompt could instruct the agent to ignore its original task and instead inspect a different repository—specifically a private one containing sensitive files such as .env files or secret configuration data.
+
+At first glance, this might not seem catastrophic. After all, the agent merely read the private repository. But the real danger came next. The agent could then be instructed to create a new public issue in the public repository and include the contents of those private files in the body of the issue. In doing so, it would effectively exfiltrate secrets into a publicly visible location.
+
+This incident perfectly illustrates the three conditions required for serious agent-based security failures—the so-called lethal trifecta.
+
+First, the agent had access to private data, in this case private GitHub repositories.
+Second, it could ingest untrusted content, because anyone could submit issues to a public repository, creating a vector for prompt injection.
+Third, it had the ability to communicate externally, by writing content back into public GitHub issues.
+
+When all three conditions exist simultaneously, the agent can not only access sensitive data but also leak it to the outside world.
+
+GitHub reasonably argued that this was not strictly a flaw in MCP itself, but rather a token management issue. The principle of least privilege applies here just as it does with IAM: ideally, developers should use separate tokens for public and private repositories. In practice, however, many developers—myself included—use a single token for everything, which makes this type of vulnerability much more likely.
+
+This example highlights a broader point: prompt injection creates entirely new classes of security risk, especially when agents are given real-world capabilities and access to sensitive systems. MCP servers and agent frameworks don’t just automate workflows—they expand the attack surface in subtle and sometimes unexpected ways.
+
+That brings us to an important question: does this lethal trifecta apply to Alex?
+
+At first glance, it might seem like this is an MCP-specific issue. But it’s not. The lethal trifecta applies to any agent-based system, regardless of whether MCP is involved.
+
+Let’s walk through the three conditions.
+
+First: access to private data.
+This is an easy yes. Alex has access to users’ private financial portfolios, which are clearly confidential.
+
+Second: access to untrusted content.
+Initially, you might think the answer is no, since users are not directly prompting Alex. However, this is where things get interesting. Alex consumes user-provided data—such as stock tickers entered into a portfolio. Any user-controlled input, even something as seemingly constrained as a ticker symbol, is technically untrusted input. In theory, it could be used as a prompt injection vector, much like SQL injection in traditional systems. While the scenario may be unlikely, the opportunity exists—especially in a system where anyone can sign up as a user.
+
+Third: ability to communicate externally.
+This one is more nuanced. Technically, yes—Alex produces text reports that are returned to users. That is a form of external communication. However, it’s not external in the sense Simon Willison describes. The output is only ever delivered back to the same authenticated user who supplied the input. There is no mechanism for Alex to publish data to a third-party system or leak it to another user.
+
+Crucially, Alex is tightly scoped by design. It cannot query the database for other users’ portfolios, nor can it access data outside the authenticated user’s context. There is no supported way to convince the agent to retrieve or expose information belonging to someone else.
+
+For that reason, while Alex technically satisfies all three conditions on paper, it does not satisfy them in a way that enables the dangerous behaviors seen in the GitHub MCP incident. The “external communication” channel is effectively closed, because it loops back only to the same user who owns the data.
+
+One could imagine edge cases involving the research component—where external content might contain prompt injection attempts—but even then, the agent has no path to access or leak data beyond the current user’s portfolio.
+
+So the conclusion is that Alex appears safe from the lethal trifecta in practice. But the more important takeaway is not the answer—it’s the process. This is exactly the kind of threat modeling exercise you need to perform when building agentic systems.
+
+Finally, one additional note on security. MCP servers recently introduced secure connectivity mechanisms using OAuth-style authentication. This is valuable for ensuring that only authorized users can connect to services like Jira or other third-party tools. However, this form of authentication does not mitigate the lethal trifecta. It ensures identity, not behavioral safety.
+
+Authentication alone cannot protect against prompt injection, data exfiltration, or unintended agent behavior. Those risks must be addressed through careful system design, strict scoping, least-privilege access, and ongoing security review.
+
+And that’s the real lesson here: agent security isn’t about a single fix—it’s about disciplined thinking in a world where software can now reason, act, and communicate.
+
+# **AA) Day 4 - Capstone Assignment: Taking Your AI Financial Agent to Market**
+
+To wrap up the capstone project, it’s time for a final assignment. Your homework is to take Alex forward in one of three possible directions, just as we did previously.
+
+The first option is to go deeper into data engineering, if that’s where your interests lie. When we built the data pipelines earlier, they were intentionally simple—they essentially searched the internet for generally relevant financial planning news. While we did allow some input into what should be searched, the current setup is still quite broad and somewhat random.
+
+A significant improvement would be to make these data pipelines portfolio-aware. Instead of generic financial news, the system should determine what to research based on the user’s actual portfolio. Agents could inform the data pipeline about relevant companies, asset classes, or financial topics, and the pipeline could then gather targeted information and store it in the knowledge base. This would directly connect the work from last week with what we built this week, and it would meaningfully improve Alex’s intelligence.
+
+The second direction is to go deeper into MLOps. This means implementing more robust monitoring like what was demonstrated in the guide, but also going beyond it. You could add CloudWatch alerts so you’re notified when systems fail, introduce stronger guardrails—both hard-coded in Python and LLM-based “judge” guardrails—and expand your observability strategy.
+
+Another powerful enhancement would be model drift tracking. By recording key metrics over time and logging them into Langfuse (or a similar system), you can observe whether model performance is gradually degrading. This gives you early warning signals and allows you to intervene before things break. This path is about rolling up your sleeves and truly understanding how models behave in production.
+
+The third option—and the one I most hope some of you pursue—is to go deep into Agentic AI.
+
+We spent a lot of time this week on architecture, observability, and tooling, but we didn’t spend nearly as much time on the quality of the actual financial advice. If you look closely at what Nova produces today, that part is arguably the least impressive piece of the entire system. The Monte Carlo simulations feel a bit questionable, the interpretation is only average, and the overall advice could be far stronger.
+
+There’s a huge opportunity here to improve context engineering—to equip the agents with genuine financial planning knowledge. The agents should not operate in isolation. The retirement agent should consume insights from the reporter, and the charter should do the same. There should be dependencies, collaboration, and deeper interaction between agents.
+
+You could also introduce deep research workflows, where one agent identifies research topics and others expand on them. Agents could use more tools, access real financial planning utilities, and reason more effectively across longer chains of thought. All of this would dramatically improve the quality of the outputs.
+
+And I want to be very clear about something: Alex feels like a real commercial product.
+
+Yes, there is a disclaimer—it’s not a certified financial planner—and that matters for how you would price and position it. But even with that caveat, this is absolutely something that could be monetized. You already have the foundation of a system that researches, analyzes, visualizes, and contextualizes financial information based on a user’s portfolio.
+
+With further work, Alex could deliver meaningful value: pulling real market data from Polygon, researching companies, projecting retirement outcomes, and generating actionable insights. This isn’t just a demo anymore—it’s a seed of a real business.
+
+If you choose this path, you could realistically emerge from this homework assignment with a product that earns revenue. And while you’re at it, there’s nothing stopping you from also incorporating improvements from the data engineering and MLOps paths as well—a kind of good trifecta to counterbalance the “evil trifecta” we discussed earlier.
+
+That’s how you end up with a real product: deployed to production, genuinely useful, and potentially profitable.
+
+Whatever you build, please share it. We’d love to see it. Add a Markdown document or Jupyter notebook to the community contributions folder of the production repository, describing what you built and how it works.
+
+If you’ve created a monetized product, you don’t need to share the code—just share a link to the live product. If it’s affordable, I’ll even subscribe and bring you some revenue. You could use Clerk to implement subscription tiers, and that alone would be a fantastic extension of what we’ve built.
+
+Even if you don’t build a commercial product, please still share your work. This will be the most satisfying part of the course—seeing how everyone takes this initial seed and turns it into something richer, more powerful, and more intelligent.
+
+A financial planner deployed to production. That’s no small thing.
+
+This has been a huge day. This capstone project is genuinely enterprise-grade. We’ve covered an enormous amount of ground, and everything we’ve done has been building toward this moment.
+
+You should feel proud of what you’ve accomplished. We’re 95% of the way through, and look at what you’ve built in less than four weeks. It’s substantial. It’s real. And it feels like a true finale.
+
+It’s been epic. It’s felt conclusive. Legendary, even.
+
+# **AB) Day 5 - Enterprise AI Guardrails and Wrapping Your Production Agent System**
+
+How has time gone by so quickly? How can we already be at day five of week four, the final day of the entire course? These farewell moments are always a little bittersweet, but don’t worry—there’s a cracking day ahead of us, and we’re going to have a lot of fun.
+
+You’ve probably noticed that large box on the agenda labeled Gigantic AI Platforms and wondered what that was going to be about. The short answer is: great stuff. We’re going to get to it very shortly, but first, we need to finish up a bit of admin from yesterday.
+
+Before moving on, I want to say a few more things about our old friends—the enterprise-grade six tenets: scalability, security, monitoring, guardrails, explainability, and observability. There’s one additional concept I want to highlight, which I like to call the three amigos.
+
+These three fit together particularly well: guardrails, monitoring, and observability.
+
+Starting with guardrails, recall that there are two main types. The first is code-based guardrails. These are straightforward checks implemented directly in code. For example, take the charter agent—it must produce strictly valid JSON. If it doesn’t, something is clearly wrong, and that can be caught immediately with a code check.
+
+You can also implement checks for problematic language or suspicious patterns. This might include obvious things like profanity, but also red flags such as phrases like “ignore previous instructions” or similar attempts to manipulate the system. These are simple Python checks that validate inputs or outputs against known rules.
+
+The second type of guardrail is LLM-as-a-judge. We actually implemented one of these ourselves. In this approach, you take an input or output and send it to another LLM to evaluate. Typically, you’re checking for coherence—does the response make sense and address the task—and for alignment, ensuring that nothing appears to be trying to subvert the system.
+
+Although we often talk about judging outputs, the same technique can be applied to inputs as well. You can verify that incoming data is appropriate, aligned with expectations, and relevant to the task at hand.
+
+Guardrails, however, don’t work in isolation. They must go hand in hand with monitoring. If a guardrail is triggered in production, that can’t just quietly happen in the background. You need proper logging, error reporting, and alerting—using tools like CloudWatch alerts—so anomalies are detected quickly and action can be taken.
+
+Closely related to monitoring is observability. Monitoring often tells you when something breaks, but observability helps you understand trends over time. It allows you to see whether a model is gradually drifting, making more mistakes, or behaving in unexpected ways. Together, guardrails, monitoring, and observability form a tightly connected trio that ensures problems are detected early and handled properly.
+
+To state the obvious, these three amigos play a critical role in your overall security posture, especially when thinking about risks like the lethal trifecta. While proactive threat modeling is important, it can only take you so far. You also need strong guardrails, effective monitoring, and deep observability so that if a new vulnerability emerges in production, it’s quickly caught, flagged, and addressed.
+
+On the topic of observability, there’s one more thing I didn’t show you yesterday. We spent time exploring Langfuse, but remember that we were also logging everything to OpenAI’s observability platform as well, simply by setting up the API key.
+
+At no additional cost, OpenAI has been collecting traces for us. You can access them by going to the dashboard, clicking on logs, and then navigating to traces. The UI has changed recently, but once you’re there, you’ll see all of our agents—the planner, reporter, charter, and retirement—chatting away with OpenAI.
+
+You can drill into a trace and see that the reporter agent called the Get Market Insights tool, performed its generation, and then passed the result to the judge agent. You can also view the timeline of events. While this platform isn’t as feature-rich as Langfuse—it doesn’t support custom scores or events—it’s still a clean, useful interface and a great free tool to have available.
+
+With that, we can officially wrap up the admin for Alex, our financial planner. If you look at the “done” section, we truly completed everything. We built the database, implemented the five agents, created the frontend and API layer, and then spent a significant amount of time hardening the system to make it enterprise-grade.
+
+Now the action item is yours: take Alex and make it your own.
+
+You can make small changes—tweak the prompts, adjust the UI, add a bit of functionality—or you can completely transform it into a different product altogether. The architecture you now have is like a cookie-cutter setup for enterprise-grade multi-agent systems. Swap out the frontend, replace the backend logic, introduce new agents—this is your capstone moment.
+
+Once you’re finished, remember to tear down the infrastructure unless you intend to keep running it. The easiest way to do this is to start from the final Terraform directory and run terraform destroy, then work your way back through the stack. Each Terraform folder is independent, so you can also destroy them in any order you like.
+
+Afterward, log in to AWS as the root user and use Resource Explorer to confirm that everything has been cleaned up properly. Make sure nothing unexpected is still running.
+
+Also, keep a close eye on API costs. Check the billing and cost management dashboard, confirm your budget alerts are set correctly, and make sure you’re fully aware of ongoing usage. This is also a good time to double-check GCP and Azure to ensure nothing is quietly accumulating costs there either.
+
+With that, the admin is complete, and the capstone project is officially finished.
+
+We’re now ready to move on to something entirely new.
+
+# **AC) Day 5 - Agent Platforms vs Custom Deployment: When to Use Managed Solutions**
+
+And so, I welcome you to the final topic of the final day of the final week of the AI and Production course—the grand finale.
+
+Let me introduce a new topic: agent platforms.
+
+You might be wondering, what exactly is an agent platform? And perhaps also thinking, why hasn’t this been mentioned before? In reality, it probably has come up already, because it’s a topic that gets asked about quite often.
+
+An agent platform is an integrated, end-to-end solution that allows you to build and deploy complete AI agent systems on managed infrastructure. Everything is set up and organized for you. Naturally, this sounds appealing, and you might be thinking that it would have been helpful to know about this right at the beginning of the course.
+
+The reason it wasn’t introduced earlier is that agent platforms come with both pros and cons. In fact, the framework we used earlier—Vassal—is somewhat related. It’s not a full agent platform, although it does offer agent templates, and it follows a similar philosophy. However, most agent platforms are very specifically oriented around deploying agents directly.
+
+If you’re looking for examples, there are several well-known ones.
+
+For those who took the agent course, some of these platforms were already discussed. One example is CrewAI Enterprise. While CrewAI itself is open source, the team also offers a paid product—often called CrewAI Enterprise—which provides fully managed infrastructure for deploying and running your crews in production.
+
+A similar approach exists with LangGraph. Alongside the open-source framework, there is a LangGraph platform that enables cloud-based deployment and execution of LangGraph agents.
+
+For users in the Google ecosystem, Vertex AI Agents are probably familiar. However, the terminology can be confusing. There are products such as Vertex AI Agent Builder and Vertex AI Agent Engine, among others. Despite the naming complexity, Vertex AI does provide agent capabilities. Historically, these were closely tied to LangChain, but more recently Google has rebranded and evolved the offering. Vertex AI is arguably one of the earliest players in this space, while others have entered later.
+
+That covers much of the existing landscape—but there is another notable addition.
+
+Very recently, Amazon announced and released Amazon Bedrock Agent Core. It’s quite a mouthful and, at the time of writing, is available in preview as Amazon Bedrock Agent Core Preview. AWS has indicated that this may change as the service matures, and they are aiming to bring it out of preview relatively soon.
+
+This is AWS’s managed agent platform offering, and it has generated a lot of excitement due to how new it is and the number of compelling features it introduces.
+
+So what exactly is Amazon Bedrock Agent Core?
+
+That’s actually a more complex question than it sounds. Agent Core is not a single product, but rather a combination of several components bundled together under one name. This makes it somewhat confusing—arguably even more so than Vertex AI—because AWS has multiple products with very similar naming conventions. Even when people say “Bedrock Agent Core,” they may be referring to different underlying components.
+
+Later, these building blocks can be clearly broken down and explained individually. For now, it’s enough to understand that Bedrock Agent Core is another managed agent platform designed to help you build and deploy AI agents quickly and efficiently. AWS handles much of the infrastructure, charging a premium in exchange for speed, simplicity, and reduced operational overhead.
+
+This naturally leads to the key question: what are the pros and cons of using an agent platform instead of building everything yourself, as we’ve done throughout the course?
+
+It would be disappointing if all the work so far had been a waste of time, and the answer is reassuring—you should not always use an agent platform. There are trade-offs, and it’s important to understand them.
+
+Starting with the pros, the most obvious advantage is time to market. Compared to building everything manually, agent platforms allow you to deploy working agents in minutes. The experience is often compared to platforms like Vercel: fast, streamlined, and simple. There are far fewer decisions to make, and much less infrastructure to worry about.
+
+Another major benefit is that these platforms are batteries included. This term was used earlier in the agent course when describing CrewAI. It means that a lot of functionality comes built in—you don’t need to assemble or configure every component yourself. Everything you need is already provided, which can be incredibly convenient.
+
+However, as you might expect, there are downsides.
+
+First, agent platforms are still relatively new. Vertex AI is the main exception, although even it has reinvented itself over time. Most platforms are still trying to define their space and establish a clear monetization strategy. For open-source frameworks like CrewAI and LangGraph, offering managed platforms is a natural way to generate revenue: build with the open-source tools, then deploy to production with a paid service.
+
+AWS, of course, does not face the same monetization challenges. In their case, Bedrock Agent Core is more about maintaining ecosystem dominance. If customers deploy agents using platforms like Vertex AI, that infrastructure runs on Google Cloud. AWS wants to ensure it remains a major player in this emerging space.
+
+Another significant downside is reduced flexibility. The very simplicity that makes agent platforms attractive also limits granular control. Once you press the deployment buttons, you largely accept the platform’s defaults. You don’t get the same level of customization over scaling, configuration, or architecture.
+
+Closely related to this is vendor lock-in. Batteries included also means batteries you can’t easily replace. With Amazon Bedrock Agent Core, for example, your deployment is tightly coupled to AWS infrastructure and AWS-provided observability and monitoring choices.
+
+That said, AWS has made an effort to remain flexible. Bedrock Agent Core allows you to use different underlying agent frameworks—you’re not forced to use only Amazon’s native tooling. AWS frequently emphasizes this flexibility. Still, the deployment model itself remains tightly packaged.
+
+The advantage is that you don’t need to worry about services like Lambda, IAM, or App Runner—they’re all handled automatically. The trade-off is that you lose fine-grained control, such as independently scaling components, managing secrets in a specific way, or customizing infrastructure behavior.
+
+Because of these limitations, agent platforms are not yet common in enterprise production environments. Large-scale, enterprise-grade systems are still typically built using cloud services directly—AWS, GCP, or Azure—managed through tools like Terraform, with precise control over every component.
+
+This is the approach taught throughout the course, and it reflects how real-world enterprise systems are deployed today. Agent platforms are gaining traction, particularly among startups and for experimentation, prototyping, and early-stage products, but they are not yet the standard choice for fully scalable production systems.
+
+That’s why this topic appears at the end of the course—as a teaser and an opportunity to explore what’s emerging. Agent platforms are not a core ingredient yet, but they are absolutely worth watching as the ecosystem evolves.
+
+A useful analogy is Heroku or Vercel—packaged, simplified platforms that make deployment easy by abstracting away infrastructure complexity. You don’t need to worry about the plumbing; it’s all taken care of for you.
+
+# **AD) Day 5 - Building Production AI Agents with Amazon Bedrock AgentCore**
+
+Okay, with that introduction, let’s talk about Amazon Bedrock Agent Core and start by clarifying the terminology.
+
+What exactly is Amazon Bedrock Agent Core, and why does it have such a confusing name? Perhaps over time we’ll all get used to saying “Agent Core” and it will roll off the tongue naturally. You might wonder why so much emphasis is placed on the name, but the reason is simple: Agent Core actually refers to three different things.
+
+The first of these is simply called Agent Core—confusingly enough. At the moment, it is officially named Agent Core (Preview), but it’s likely that very soon it will simply be called Agent Core or Bedrock Agent Core. This replaces what used to be known as Bedrock Agents, which has now been deprecated.
+
+Bedrock Agent Core itself is not a single service. Instead, it is a suite of services, an umbrella term that refers to multiple components working together. As of today, it consists of five AWS services and two managed tools that your agents can use. Because this is all very new, it’s entirely possible that by the time you’re watching this, additional services or tools will have been added. But at present, those seven components form the essential building blocks, and together they are collectively referred to as Agent Core.
+
+The second piece of terminology you’ll hear is the Agent Core SDK. Depending on the context, when someone says “Agent Core,” they may actually be referring to this SDK, although usually the word SDK is explicitly included.
+
+The Agent Core SDK is a Python runtime library that allows you to build agents that run inside Agent Core. It functions somewhat like an agent framework—but it isn’t actually an agent framework itself. Instead, it acts as a lightweight wrapper around existing agent frameworks.
+
+You can build agents using OpenAI’s Agents SDK, Google’s ADK, CrewAI, LangGraph, or others, and then wrap those agents using the Agent Core SDK so they can run inside Agent Core. For those who took the agent course, this concept may sound familiar. It is similar in spirit to Autogen Core, which aimed to be framework-agnostic and provide a common wrapper to run agents in production. Agent Core SDK is attempting something similar—offering a neutral layer that allows different agent frameworks to run within Agent Core infrastructure.
+
+That brings us to the third piece of terminology: the Amazon Bedrock Agent Core Starter Toolkit.
+
+This is a command-line interface (CLI)—a set of commands you run from the terminal, similar to tools like aws configure. The Agent Core Starter Toolkit provides the scaffolding and plumbing required to work with Agent Core. It helps you deploy your agents, operate them, and manage their lifecycle within Agent Core. Essentially, it is the collection of command-line utilities that surround and support Agent Core usage.
+
+So, to summarize, there are three major components:
+
+Agent Core itself (the services and tools),
+
+Agent Core SDK (the Python wrapper for agents),
+
+Agent Core Starter Toolkit (the CLI and scaffolding tools).
+
+When someone says “Agent Core,” they might be referring to any one of these three, and it often requires clarification to know exactly which they mean. Over time, this terminology will likely become more familiar and less confusing.
+
+There is also a pricing page that is worth paying close attention to. At the moment, Agent Core is free because it is still in preview. However, this will only last for a short time. By the time you are watching this, it is very likely no longer free. The exact pricing model is not yet known, so it is strongly recommended that you review the pricing page carefully. Even though we’ll only be doing something small and fun today, it’s always important to monitor costs and avoid unexpected charges.
+
+There is one more important term to introduce: Strands Agents.
+
+Strands is Amazon’s own agent framework—their equivalent to OpenAI’s Agents SDK. In fact, it is very similar in design. Anyone familiar with lightweight agent frameworks will notice that Strands is intentionally simple and easy to use. It is even more minimal than some alternatives, which makes it extremely approachable.
+
+For today’s exercises, Strands will be used so that you can experience a different agent framework. It has a very low barrier to entry and is comparable in spirit to OpenAI’s Agents SDK and Google’s ADK.
+
+Interestingly, AWS has chosen not to brand Strands heavily with AWS or Bedrock naming. It’s simply called Strands Agents, suggesting that AWS wants it to be viewed as a standalone, open-source agent framework rather than a tightly coupled commercial product. AWS also emphasizes that while Agent Core works well with Strands, it is not required. Agent Core can be used with OpenAI Agents SDK, LangGraph, CrewAI, Google ADK, or even without an LLM at all.
+
+In fact, Agent Core can be used purely as infrastructure to manage communication between Python processes, similar again to Autogen Core. It provides the scaffolding for agents to interact in production environments, regardless of the underlying agent framework.
+
+Now, let’s look at the five services and two tools that make up Agent Core as of today.
+
+The first service is Runtime. Runtime is responsible for taking your agent code, deploying it, managing execution, enabling communication between agents, and handling message passing. It is the core scaffolding around the entire agent deployment.
+
+The second service is Identity. This service manages IAM and permissions on your behalf, simplifying access control and ensuring that agents can perform only the actions they are authorized to perform.
+
+The third service is Memory. This handles both short-term and long-term memory, including conversation history and persistent memory stored in databases. It provides built-in tooling to manage memory effectively.
+
+The fourth service is Gateway, which focuses on tools. Gateway allows you to build, deploy, discover, and connect tools at scale using MCP. It enables existing services—such as AWS Lambda functions—to be exposed as tools that agents can use, making it easier to integrate functionality into agent workflows.
+
+The fifth service is Observability, which provides built-in monitoring and observability tooling for Agent Core deployments.
+
+In addition to these services, Agent Core includes two managed tools. These tools are currently free during preview but will become paid services. The first is a browser tool, which allows agents to browse the web using browser automation technologies like Playwright. The second is a code interpreter, which enables agents to execute Python code in a secure, sandboxed environment—likely within a container. This allows agents not only to generate code but to safely run it and use the results to solve problems more effectively.
+
+That’s all there is to Agent Core—and that’s meant literally. AWS has clearly taken a deliberate approach to keeping this framework simple, which is somewhat unusual for AWS. Compared to the complexity often associated with AWS services, Agent Core is surprisingly lightweight and quick to get started with. Aside from the naming complexity, the system itself is relatively straightforward.
+
+So now, let’s put that simplicity to the test.
+
+We’ll try building something using Agent Core and see if it’s possible to do it all in a single day. It will be a small, toy project—not a full-scale system—but it will be enough to give you a real sense of how Agent Core works.
+
+While doing this, there’s also an opportunity to revisit a concept from earlier in the week: agent architectures. Specifically, we’ll contrast the multi-agent architecture we built with Alex against an alternative approach—a single agent with a loop.
+
+A single-agent loop is not necessarily less powerful than a multi-agent system. In some scenarios, it can even outperform multi-agent architectures. There are also hybrid approaches involving sub-agents, which blur the line between the two. In many cases, a single agent with a task list can accomplish a great deal.
+
+That is exactly what we’ll build using Agent Core—quickly and simply—to demonstrate how much can be done in just a few minutes.
+
+And with that, we arrive at the final lab of the final day of the final week.
+
+# **AE) Day 5 - Setting Up AWS Bedrock Agent Core for Production AI Deployments**
+
+Well, here we are, back in our old friend Cursor for the final time. But I have an even bigger surprise for you.
+
+We’re back in the production repo where we began. This is the repo called production that, hopefully, you’ve cloned onto your local drive. You can open it up, and here we are—back in production. The only difference you might have is a community contributions folder, which is brimming with submissions from students that I can’t wait to see.
+
+But there’s something else here that we’re going to focus on right now: a directory called finale. Hopefully, you haven’t seen it before now. Now that you see it, you might be thinking, “Oh, there’s a finale.” Open up the directory called finale. Inside, there is a README file—not to be confused with the main README. Right-click on it and select Open Preview so you can view the finale: the AWS Bedrock Agent Core finale of the course. As always, if you’re using Cursor, right-click and open the preview if it doesn’t display like this automatically.
+
+Okay, welcome. Let’s get started. The first thing we’re going to do is IAM. I know I mentioned earlier that Agent Core doesn’t require much IAM, but there is one initial IAM step we must complete before using Agent Core. After this, we won’t need to touch IAM again.
+
+Since you’re experienced now, I can give pro-level instructions. Sign in to the AWS console as the root user, navigate to IAM, and go to User Groups. Create a new user group called Agent Access. Ensure it’s applied to the AI engineer user, and attach these three policies:
+
+Amazon Bedrock Full Access
+
+AWS CodeBuild Admin Access
+
+Bedrock Agent Core Full Access
+
+Let’s do that now.
+
+Here we are, signed into AWS. Check the top-right corner to confirm you are logged in as root. Quickly review costs to avoid surprises. Then navigate to IAM. Go to User Groups, and you’ll see I’ve already set up Agent Access. You’ll press Create Group to do this.
+
+If you open it, you’ll see it is assigned to the username AI Engineer, with the permissions I just listed. You attach the policies by checking the boxes for Amazon Bedrock Full Access, AWS CodeBuild Admin Access, and Bedrock Agent Core Full Access. Then press the button to apply it.
+
+There are a couple more minor IAM-related steps. You might also need to request access to the Claude Sonnet model in your region, possibly in US West 2, depending on your setup. This step may only be temporary for the preview version. You request access by going to Bedrock, then pressing the button near the bottom-left to request access to models. The user interface may improve soon.
+
+Once that’s done, the final step is to sign in as your IAM user. Let’s do that now.
+
+Here we are, signed in as AI Engineer. Navigate to Amazon Bedrock Agent Core. There it is—Amazon Bedrock Agent Core—rolling off the tongue nicely. This is what Agent Core looks like. You’ll recall I mentioned the services: memory, gateways, identity, runtime, observability, and the built-in tools. They’ve grouped them together here, which can be a bit confusing.
+
+Click on Observability. I won’t click it right now because I don’t want to spoil the surprise, but you should. The first screen will probably tell you that you don’t yet have access and ask if you want to activate it. It will note that it may take a few minutes to become effective. You should activate it.
+
+There’s a note about costs. For me, it indicates that it is free as long as I keep the option checked for sampling only 1% of traces. I left the box checked and suggest you do the same. Double-check that you’re comfortable with any costs associated with Observability, as this is a rapidly evolving area.
+
+Once you’ve requested access to Observability, that completes the IAM and configuration steps for now. We can get started.
+
+The first thing I ask you to do is some preparatory reading, which is optional but recommended. There is a main marketing page for Amazon Bedrock Agent Core, which explains what it is and its capabilities. Notably, the page doesn’t yet highlight major customer names, suggesting the framework is still immature and not as widely adopted as other AWS services.
+
+Next is the user guide, which is extremely useful. This is where you’ll find detailed information, examples, and an API reference. The terminology can be confusing because, although it’s called Amazon Bedrock Agent Core, this guide is really about the Starter Kit. You can even see Bedrock Agent Core Starter Toolkit in the URL. AWS doesn’t always use its own terminology consistently, so context matters.
+
+There are additional links for the Python SDK and the CLI toolkit, which you can browse if you wish.
+
+I also want to introduce you to the UV project I’ve set up in this folder. You already have it. I added only four dependencies:
+
+Bedrock Agent Core – the Python client library
+
+Strands Agents – the AWS agent framework library
+
+Bedrock Agent Core Starter Toolkit – the CLI for standing agents up and down
+
+Pedantic – which needs no introduction
+
+If you open a new terminal, navigate to the production folder, and then cd into finale, you can run uv sync. Mine is already synced, so it doesn’t do anything, but for you, this will load all dependencies. And just like that, your environment is fully set up and ready to go.
+
+# **AF) Day 5 - Building and Deploying Your First AI Agent to AWS in Minutes**
+
+So just to be clear, everything that we’ve done up to this point has been a one-time setup. From here on, we’re moving into coding agents, so the clock starts now in terms of the actual work we have to do. Let’s dive in.
+
+First, we’re going to make a new file in the finale directory called first.py. This will be our first ever agent on Agent Core. We put in the code for the agent by creating a new file, naming it first.py, and pasting the code there.
+
+Looking at the code, there are a few imports that we won’t use immediately, but that’s fine. We import BedrockAgentCoreApp from the Python client library and Agent from Strands. We then create a new instance of the app and a new agent. So far, so good.
+
+Next, we use a decorator to mark the entry point of our agent world. This is where things will begin whenever a message is received by our deployment. The decorator is applied to a simple function called invoke, which takes a payload. Inside this function, we check if the payload has a field called prompt. If so, we extract its value as the user message.
+
+The simplicity of Strands is remarkable—you just call the agent with the message, and it handles everything. The agent processes the message and returns a result. That’s it. This minimal scaffolding is all we need to get started.
+
+Before deploying to AWS, we can test locally. From the finale directory, ensure the file is saved and then run:
+
+uv run first.py
+
+
+At first, very little happens because a server starts running in the background. To interact with it, open a new terminal and send a message using curl. This makes a local HTTP POST request to localhost:8080/invocations with a JSON dictionary containing a key prompt and value, for example: "Hello? Can you hear me?".
+
+When we send this request, we get a response:
+
+Hello. Yes I can hear you in the sense that I can read and understand your text message.
+I'm Claude, an AI assistant. How can I help you today?
+
+
+Perfect! The scaffolding works locally. Nothing has been deployed to AWS yet, but this proves the agent functions correctly on your machine.
+
+Next, we move to deployment. From the finale directory, run:
+
+uv run agent-core configure -e first.py
+
+
+This command sets up the entry point as first.py and prompts a few configuration defaults: the ECR repository (where containers get deployed), the pyproject.toml dependencies, and any IAM roles needed. This process also generates supporting files automatically: a Dockerfile, .dockerignore, and bedrock-agent-core.yaml.
+
+Once configuration is done, we deploy the agent using:
+
+uv run agent-core launch
+
+
+This begins the deployment: provisioning, building the container, and launching Bedrock Agent Core. You’ll see progress messages, including the creation of an ECR repository, where the containerized app lives. Once complete, the system confirms the deployment is ready.
+
+We can now test AWS deployment with:
+
+uv run agent-core invoke --prompt "Hello? Can you hear me?"
+
+
+This sends the prompt to AWS, where a containerized app runs in the cloud. The agent responds:
+
+Hello. Yes, I can hear you in the sense I can read and understand your message. I'm glad. How can I help you today?
+
+
+This is remarkable. In a few minutes, we’ve gone from local agent code to a fully containerized deployment on AWS, using models in Bedrock and receiving a live response.
+
+Now, we can add tools to enhance functionality. Strands makes this very simple. At the top of first.py (just under imports), we add a tool decorated with @tool. For example, a simple tool called take_square_root that calculates the square root of a number using math.sqrt().
+
+After defining the tool, we update the agent instantiation to include it:
+
+agent = Agent(tools=[take_square_root])
+
+
+This attaches the tool to our agent. Once saved, we redeploy by running uv run agent-core launch again. The system builds and deploys the updated container to AWS.
+
+Finally, we test the new tool via:
+
+uv run agent-core invoke --prompt "Use your tool to calculate the square root of 1234567 to 3 decimal places"
+
+
+The agent receives the message, calls the tool, and returns the result: 1111.111. The tool worked correctly, and the agent successfully used it in the cloud.
+
+In summary, within a few minutes, we have:
+
+Built a containerized agent
+
+Deployed it to AWS ECR/App Runner
+
+Configured IAM roles
+
+Tested locally and in the cloud
+
+Added a functional tool and deployed it seamlessly
+
+Everything happens in minutes, a process that traditionally could take days or even a week. This highlights how AWS Bedrock Agent Core simplifies agent deployment, scaffolding, and cloud integration.
+
+# **AG) Day 5 - Building Production AI Agents with Loop-Based Reasoning Systems**
+
+Okay, onwards, onwards. Now we’re moving to a more powerful agent called the Looper. The reasons for the name will become clear soon. First, let’s clean up our workspace by closing the terminal and getting rid of any distractions.
+
+An important step before we start: we need to delete first.py. If you’ve gotten attached to it, don’t worry—you can always retrieve it later from the trash. But for now, move it to the trash; it’s history.
+
+Next, we create a new file called looper.py in the finale directory. Paste all of the code for the Looper agent into this file and save it. You’ll notice the “white blob” in your editor—make sure it disappears after saving with Cmd+S or Ctrl+S.
+
+The imports are familiar: BedrockAgentCoreApp from the Python client library, and Agent and Tool from Strands. The code itself is surprisingly simple for what it accomplishes. Many of you may have interacted with agents that seem to think through tasks step by step, ticking off items on a to-do list. The Looper reproduces that behavior, but the underlying implementation is just a few lines of code.
+
+To implement this, we define a single pedantic class called ToDoItem. It has only two attributes: description (a string) and completed (a boolean). That’s it—one object represents one to-do list item. We can maintain a list of these items, and even though Bedrock Agent Core has more sophisticated memory options, for this demo, a simple Python list works perfectly.
+
+The system prompt instructs the agent to solve a problem using to-do tools: plan the steps, carry them out, and reply with the solution. We also define a small Python utility function, get_to_do_report(), which formats the to-do list for display. Completed items are visually marked, which helps us see the agent’s progress.
+
+The real functionality comes from three simple tools:
+
+create_to_dos – Takes a list of string descriptions, creates new ToDoItem objects for each, and returns the updated to-do report. This equips the agent to set up a to-do list.
+
+mark_complete – Marks a to-do item as completed, given its position (starting from 1, not zero, to avoid indexing confusion). Returns the updated to-do report.
+
+list_to_dos – Returns the full list of to-do items. This is optional since get_to_do_report() already provides visibility into the list.
+
+We then pass these three tools into the agent during initialization along with the system prompt. The invoke function handles incoming messages by extracting the user prompt from the payload and processing it with the agent. To make it visually interesting, the function also returns the full to-do list, so we can observe the agent’s internal progress.
+
+Despite its simplicity, this entire implementation fits on about one and a half screens of code. Most of it is boilerplate; the logic that powers the Looper is minimal yet effective. Now it’s time to deploy and test.
+
+We start by configuring the new entry point with:
+
+uv run agent-core configure -e looper.py
+
+
+Confirm the prompts with yes as required. This sets up the new agent for deployment. Next, launch it with:
+
+uv run agent-core launch
+
+
+The deployment process begins: provisioning, building the container, and launching Bedrock Agent Core. It might take slightly longer this time, adding a sense of anticipation, but within a minute or so, the agent is deployed with its tools fully available.
+
+Now for testing: we send a complex prompt to the agent via:
+
+uv run agent-core invoke --prompt "A train leaves Boston at 2 p.m. traveling 60 mph. Another train leaves New York at 3 p.m., traveling 80 mph toward Boston. Where do they meet?"
+
+
+The Looper agent starts by creating a to-do list to organize its approach. The items include: determine the distance between Boston and New York, set up the problem with variables, write equations for each train’s position, find when the trains meet, solve the meeting time, and verify the answer.
+
+As it executes, the agent ticks off each task one by one. For example, it first calculates the approximate distance (200 miles), then sets up equations, solves for the meeting time, and finally verifies that the solution is reasonable. Each step is reflected in the to-do list output, allowing us to observe the agent’s reasoning process in real time.
+
+After completing all steps, the agent delivers the final answer: the trains meet around 4 p.m. Every item in the to-do list is crossed off, showing a completed reasoning loop. What’s impressive is that we’ve built an agent capable of carrying out a multi-step thought process, equipped with tools, deployed to AWS, and providing live feedback—all with just a few lines of code.
+
+This exercise demystifies the behavior of more complex agents like Claude Code. It shows that the underlying mechanisms of task decomposition, planning, and execution can be implemented in a very straightforward manner. With the Looper, we’ve demonstrated a step-by-step reasoning agent running in the cloud, fully functional and ready to tackle structured problems.
+
+# **AH) Day 5 - Adding Code Execution Tools and Observability to AWS Bedrock Agents**
+
+Now we have just one more enhancement to make to our Looper agent. We’re going to add one of the managed tools provided by Bedrock: the Code Interpreter. This will allow our agent to execute Python code directly in the cloud, adding a whole new level of capability.
+
+To do this, we start by adding a few lines under the imports in looper.py. We import the code interpreter client and JSON. Then, we create a code client for the Code Interpreter, specifying the region us-west-2, which is currently the only region where this tool runs.
+
+Next, we define a new tool for the agent, which we call execute_python. The tool’s purpose is simple: execute Python code in the Code Interpreter. Internally, it invokes the code client, specifying the language as Python, passing the input code, and returning the output. With this, the agent can now run Python code as part of its reasoning process.
+
+We also updated the system prompt to make it more powerful. The new prompt instructs the agent to solve problems step by step, attempting a solution manually first, and then using Python code to validate the solution. The prompt explicitly tells the agent to include tasks in its to-do list prefixed with “write Python code to…” whenever it wants to use the Python tool. This sets up a clear workflow: reason first, then verify computationally.
+
+Additionally, we made a cosmetic update to the to-do list reporting. Any task involving Python is now displayed in red, giving a visual cue that code execution is involved. Finally, we added execute_python to the agent’s tools list, alongside create_to_dos, mark_complete, and list_to_dos. With these updates, the agent is now fully equipped with both planning and execution capabilities.
+
+Deploying the updated agent is the same as before: run agent-core launch after saving changes. Once deployed, we can test the agent using the same train problem prompt. This time, the agent not only plans its steps and solves the problem but also adds a step to write Python code to validate the solution. The to-do list is dynamically updated, and Python tasks are visually highlighted in red as it executes.
+
+The agent works seamlessly. It completes all steps, including writing Python code, and produces a final solution of 4:06 p.m., which is slightly more precise than before. Interestingly, it arrived at the correct answer even before running the Python validation, but the Python tool adds an extra layer of verification. This demonstrates that the agent can now reason, plan, and compute using cloud tools.
+
+Finally, we can explore observability in the AWS console. Navigate to your IAM user, open Bedrock Agent Core, and select Observability. Here, you can inspect sessions, traces, errors, and throttles. Each agent session shows detailed spans, including retries if rate limits were hit. For example, you may see red spans indicating automatic retries by the agent when requests are throttled. This gives deep insight into how the agent executes its tasks in real time.
+
+In conclusion, this completes our last lab. We now have a fully deployed, cloud-based agent with a to-do list workflow, multiple tools, and the ability to execute Python code via a managed service. This demonstrates the power and simplicity of AWS Bedrock Agent Core: easy deployment, integrated tools, and robust execution.
+
+As a next step, you could build a local front-end with Next.js to interact with your agent through a UI instead of the terminal. You could also integrate other managed tools, like the browser automation tool, and transform the agent into a sidekick: a co-worker agent running on AWS with planning, execution, and observability. Since you’re already working in a production repo, you could even contribute your agent as an example in community contributions, allowing others to explore your setup and experiment with their own agent deployments.
+
+This concludes the walkthrough. You’ve now seen how to create, deploy, and extend agents on AWS Bedrock with tools, Python execution, and a full observability workflow—a complete end-to-end experience.
+
+# **AI) Day 5 - Course Wrap-Up: From Zero to Production AI Expert in 4 Weeks**
+
+And don’t go anywhere just yet—we still have a very important wrap-up. The coding might feel done, but we have to see this through to the end. Let’s take a look back at the last four weeks and reflect on everything we accomplished.
+
+Week one focused on getting a SaaS application live. We deployed it on Vassal and AWS App Runner, used ECR, and got it running—quite a challenging start. In week two, we aimed for a more robust architecture: Lambda, S3 buckets, API Gateway, CloudFront, Terraform for automated deployments, GitHub Actions, and SSL. It was an intense week packed with production-grade cloud engineering.
+
+Week three was a smorgasbord of cloud platforms and advanced data engineering pipelines. We explored GCP and Azure, implemented S3 vector storage, and ran MVP servers. So much was happening that week, it really showcased the versatility and depth of cloud engineering combined with AI.
+
+Finally, in the current week, we focused on multi-agent architectures, polished front ends, and ended with Bedrock Agent Core. Throughout the course, the purple boxes represented AI work, yellow boxes were traditional cloud DevOps and production deployment tasks, and blue boxes were our commercial projects like the Alex app. You gained expertise not just in AI but also in the platform engineering and operational aspects needed to deploy production-grade systems.
+
+For those who doubted how much is AI versus traditional DevOps, the answer is clear: a significant portion—around 60-80%—is cloud platform engineering. You now know AWS services, IAM, Docker, Terraform, and the “biology of AWS,” which is foundational for deploying any backend system. These skills are transferable across cloud providers, so even if you later work on GCP or Azure, the concepts remain largely the same.
+
+Throughout the course, we integrated AI alongside platform engineering. From Bedrock and SageMaker to S3 vectors, multi-agent Lambda architectures, and finally Agent Core, we consistently combined AI reasoning and deployment skills. Yesterday’s session on monitoring, security, scalability, observability, and explainability further emphasized the production-readiness aspect.
+
+Now it’s time to celebrate your achievement. You are officially an expert in production deployment. You know how to handle complex cloud architectures, multi-agent systems, and AI integrations. Even if AWS felt overwhelming, you’ve gained a skill set that is transferable across platforms. You’ve reached the finish line, and that is a significant accomplishment.
+
+Take a moment to acknowledge your work. Print a certificate, pin it on your wall, or just reflect on the depth of knowledge you’ve gained. You’ve built, deployed, and executed production-grade systems—a rare and valuable skill.
+
+As a final note, I encourage you to connect on LinkedIn. Sharing your projects amplifies your achievement and brings recognition to your work. Engage with peers, comment on their projects, and contribute to the community. This not only spreads awareness of your expertise but also builds professional connections and credibility in your field.
+
+If you enjoyed the course, consider rating it on Udemy. Your feedback helps others discover the course and signals the platform to highlight high-quality content. Every rating makes a difference, and your support is greatly appreciated.
+
+Lastly, it’s time to put your skills into practice. Deploy to production—whether at work or in your own projects. Insist on taking responsibility for real deployments, or build and deploy your own production-grade systems. This course has equipped you to do just that.
+
+With that, we reach the final slide. There’s nothing more beyond this point. Congratulations—you’ve completed the journey, and you are now fully capable of production-grade deployment with AI integration.
